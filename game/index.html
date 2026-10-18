@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>살펴봇 공정심사실 (프로토타입 v0.2)</title>
+<style>
+:root{
+  --bg:#eef3fb; --panel:#ffffff; --ink:#1f2a44; --muted:#56617a; --line:#d9e1ef;
+  --blue:#3d6df2; --blue-d:#2848b0; --blue-soft:#e3ebff;
+  --green:#0f7f52; --green-soft:#d9f4e7;
+  --red:#c2362f; --red-soft:#fde3e1;
+  --amber:#6e4700; --amber-soft:#ffeeb8; --amber-line:#d9a300;
+  --violet:#5a3cc9; --violet-soft:#ebe5ff;
+  --hl:#fff09a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#c9d5ea;
+  font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:var(--ink);
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button{font-family:inherit;color:inherit}
+#wrap{position:fixed;inset:0;overflow:hidden}
+#stage{position:absolute;left:0;top:0;width:1280px;height:720px;background:var(--bg);
+  border-radius:18px;overflow:hidden;transform-origin:0 0;box-shadow:0 10px 40px rgba(31,42,68,.18)}
+
+/* 상단 바 */
+#top{position:absolute;left:0;top:0;right:0;height:64px;display:flex;align-items:center;
+  padding:0 24px;gap:16px;background:#fff;border-bottom:1px solid var(--line)}
+#stageName{font-size:22px;font-weight:700;min-width:330px}
+#calendar{margin:0 auto;display:flex;align-items:center;gap:10px;font-size:22px;font-weight:700;
+  background:var(--blue-soft);color:var(--blue-d);padding:6px 18px;border-radius:999px}
+#calendar svg{width:22px;height:22px}
+#calendar.flip{animation:flip .6s ease}
+@keyframes flip{0%{transform:rotateX(0)}50%{transform:rotateX(90deg)}100%{transform:rotateX(0)}}
+#meta{display:flex;align-items:center;gap:14px;min-width:330px;justify-content:flex-end;font-size:18px}
+#progress{color:var(--muted)}
+#score{font-weight:700}
+.iconbtn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font-size:16px;cursor:pointer}
+
+/* 좌측 규칙판 */
+#rules{position:absolute;left:24px;top:84px;width:280px;height:510px;background:var(--panel);
+  border-radius:16px;border:1px solid var(--line);padding:16px 12px 12px 16px;display:flex;flex-direction:column}
+#rules h3{margin:0 0 10px;font-size:18px;flex:none}
+#ruleList{flex:1;overflow-y:auto;padding-right:4px}
+.rule{border-radius:12px;padding:7px 10px;margin-bottom:6px;background:#f5f7fc;font-size:16px;line-height:1.4}
+.rule .d{display:inline-block;font-size:14px;font-weight:700;color:var(--blue-d);background:var(--blue-soft);
+  border-radius:6px;padding:0 6px;margin-right:4px}
+.rule.new{background:var(--amber-soft);animation:pulse 1.2s ease 3}
+@keyframes pulse{50%{box-shadow:0 0 0 4px rgba(217,163,0,.4)}}
+
+/* 가운데 카드 */
+#cardArea{position:absolute;left:330px;top:84px;width:620px;height:520px;z-index:5}
+#card{position:absolute;left:90px;top:6px;width:440px;height:452px;background:#fff;border-radius:22px;
+  border:2px solid var(--line);box-shadow:0 8px 24px rgba(31,42,68,.12);padding:20px 24px;
+  touch-action:none;cursor:grab;transition:transform .28s ease, opacity .28s ease}
+#card.dragging{transition:none;cursor:grabbing;z-index:30}
+#card.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-12px)}40%,80%{transform:translateX(12px)}}
+.ctop{display:flex;justify-content:space-between;align-items:baseline}
+.cname{font-size:28px;font-weight:800;margin:0 0 8px}
+.virtual{font-size:14px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.badges{display:flex;gap:6px;flex-wrap:wrap;min-height:32px;border-radius:10px;padding:2px}
+.badge{font-size:16px;font-weight:700;border-radius:8px;padding:4px 9px}
+.b-normal{background:#eef1f7;color:#3f4a66}
+.b-start{background:var(--green-soft);color:var(--green)}
+.b-women{background:#ffe6f1;color:#9e2a5d}
+.b-warn{background:var(--amber-soft);color:var(--amber);box-shadow:inset 0 0 0 2px var(--amber-line)}
+.b-flag{background:var(--red-soft);color:var(--red);box-shadow:inset 0 0 0 2px #e79a95}
+.b-innov{background:var(--violet-soft);color:var(--violet)}
+.b-excel{background:var(--blue-soft);color:var(--blue-d)}
+.item{font-size:18px;color:var(--muted);margin:10px 0 12px}
+.item b{color:var(--ink)}
+.row{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:12px;
+  background:#f6f8fc;margin-bottom:8px;font-size:18px;line-height:1.35}
+.row .k{color:var(--muted);flex:none}
+.row .v{font-weight:700;text-align:right}
+.hl{background:var(--hl)!important;box-shadow:0 0 0 2px #e6c62f inset}
+.hidden-row{cursor:pointer;border:2px dashed #8ea4e0;background:#f2f6ff}
+.hidden-row .v{color:var(--blue-d)}
+.hidden-row.need{animation:pulse 1s ease infinite}
+.hidden-row.open{border-style:solid;border-color:#c9d6f5;cursor:default}
+.mag{width:18px;height:18px;vertical-align:-3px;margin-right:4px}
+.stampHint{position:absolute;top:18px;font-size:22px;font-weight:800;padding:6px 12px;border-radius:10px;
+  border:3px solid;opacity:0;pointer-events:none;transform:rotate(-8deg);background:rgba(255,255,255,.85)}
+#hintL{left:16px;color:var(--red);border-color:var(--red)}
+#hintR{right:16px;color:var(--green);border-color:var(--green);transform:rotate(8deg)}
+#hintU{left:50%;top:auto;bottom:18px;transform:translateX(-50%);color:var(--violet);border-color:var(--violet)}
+#timerWrap{position:absolute;left:90px;top:468px;width:440px;display:flex;align-items:center;gap:10px}
+#timer{flex:1;height:8px;border-radius:99px;background:#dde4f2;overflow:hidden}
+#timerFill{height:100%;width:100%;background:var(--blue);border-radius:99px}
+#timerLbl{font-size:14px;color:var(--muted);white-space:nowrap}
+#tutorialTip,#banner{position:absolute;left:0;right:0;top:490px;text-align:center;font-size:17px;font-weight:800}
+#tutorialTip{color:var(--blue-d)}
+#banner{color:var(--green)}
+
+/* 우측 살펴봇 */
+#botPanel{position:absolute;right:24px;top:84px;width:280px;height:510px;background:var(--panel);
+  border-radius:16px;border:1px solid var(--line);padding:16px;display:flex;flex-direction:column;align-items:center}
+#bubble{position:relative;width:100%;background:#fffbe0;border:2px solid #e6c62f;border-radius:16px;padding:12px 14px;
+  font-size:18px;line-height:1.45;min-height:128px}
+#bubble:after{content:"";position:absolute;left:50%;bottom:-12px;margin-left:-10px;border:10px solid transparent;
+  border-top-color:#e6c62f;border-bottom:0}
+#bubble .tag,#bubble .radar{display:inline-block;font-size:14px;font-weight:700;border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
+#bubble .tag{background:#e6c62f;color:#3d3100}
+#bubble .radar{background:var(--violet-soft);color:var(--violet)}
+#bot{width:190px;height:210px;margin-top:22px}
+#botName{font-weight:800;font-size:18px;margin-top:2px}
+#botNote{font-size:14px;color:var(--muted);text-align:center;margin-top:4px}
+
+/* 하단 버튼 */
+#controls{position:absolute;left:0;right:0;top:612px;height:90px}
+.act{position:absolute;top:0;height:84px;border-radius:18px;border:0;font-size:22px;font-weight:800;cursor:pointer;
+  box-shadow:0 4px 0 rgba(0,0,0,.12);white-space:nowrap}
+.act:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.12)}
+.act small{display:block;font-size:14px;font-weight:700;margin-top:2px}
+#btnL{left:330px;width:270px;background:var(--red-soft);color:var(--red)}
+#btnR{left:680px;width:270px;background:var(--green-soft);color:var(--green)}
+#btnU{left:540px;width:200px;background:var(--violet-soft);color:var(--violet);display:none}
+.upmode #btnL{left:330px;width:196px}
+.upmode #btnR{left:754px;width:196px}
+.upmode #btnU{display:block}
+
+/* 토스트: 카드 아래쪽 */
+#toast{position:absolute;left:640px;top:566px;transform:translate(-50%,8px);background:var(--ink);color:#fff;
+  padding:9px 18px;border-radius:999px;font-size:17px;font-weight:700;opacity:0;transition:all .2s;pointer-events:none;
+  white-space:nowrap;z-index:20}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.good{background:var(--green)}
+#toast.bad{background:var(--red)}
+
+/* 모달 */
+.overlay{position:absolute;inset:0;background:rgba(31,42,68,.45);display:none;align-items:center;justify-content:center;z-index:50}
+.overlay.on{display:flex}
+.box{width:720px;max-height:700px;overflow:auto;background:#fff;border-radius:22px;padding:20px 30px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.box h2{margin:0 0 10px;font-size:26px}
+.box p{font-size:18px;line-height:1.55;margin:8px 0}
+.box .src{font-size:14px;color:var(--muted);margin-top:10px}
+.box .ans{display:inline-block;font-weight:800;border-radius:10px;padding:4px 10px;margin:4px 0;background:#eef1f7}
+.box .newrule{display:inline-block;font-size:15px;font-weight:800;color:var(--amber);background:var(--amber-soft);
+  border-radius:8px;padding:3px 10px;margin-bottom:8px}
+.box .habit{background:var(--violet-soft);border-radius:12px;padding:10px 14px;font-size:17px;margin-top:8px}
+.box .peek{background:#f2f6ff;border:2px solid #c9d6f5;border-radius:12px;padding:8px 12px;font-size:17px;margin-top:8px}
+.primary{margin-top:16px;border:0;background:var(--blue);color:#fff;font-size:20px;font-weight:800;border-radius:14px;
+  padding:14px 28px;cursor:pointer}
+.secondary{margin-top:16px;margin-left:8px;border:1px solid var(--line);background:#fff;font-size:18px;font-weight:700;
+  border-radius:14px;padding:13px 22px;cursor:pointer}
+
+/* 시작 화면 */
+#title{position:absolute;inset:0;background:linear-gradient(160deg,#eaf0ff 0%,#f7f9ff 55%,#e9f7f0 100%);z-index:40;
+  display:flex;align-items:center;justify-content:center;gap:56px}
+#title .tb{max-width:580px}
+#title h1{font-size:54px;margin:0 0 6px;letter-spacing:-1px}
+#title .sub{font-size:26px;font-weight:700;color:var(--blue-d);margin:0 0 16px}
+#title .desc{font-size:19px;line-height:1.6;color:#2f3a57;margin:0 0 8px}
+#title .notice{font-size:15px;color:var(--muted);margin:0 0 18px}
+#title .proto{font-size:14px;color:var(--muted);margin-top:16px}
+#zipWarn{display:none;background:var(--red-soft);color:var(--red);font-weight:700;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:16px;line-height:1.5}
+#titleBot{width:300px;height:330px}
+
+/* 결과 */
+.bars{margin:6px 0 2px}
+.bar{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:16px}
+.bar .lbl{width:120px;color:var(--muted)}
+.bar .trk{flex:1;height:18px;background:#e5eaf4;border-radius:99px;overflow:hidden}
+.bar .fill{display:block;height:100%;border-radius:99px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.stat{background:#f5f7fc;border-radius:12px;padding:8px 10px}
+.stat .n{font-size:24px;font-weight:800}
+.stat .l{font-size:14px;color:var(--muted)}
+.typecard{display:flex;gap:14px;align-items:center;background:var(--violet-soft);border-radius:16px;padding:6px 16px;margin:6px 0}
+.typecard .tn{font-size:22px;font-weight:800;color:var(--violet)}
+.typecard .tm{font-size:16px;line-height:1.45}
+.habits{font-size:16px;line-height:1.6}
+.testlog{font-size:14px;line-height:1.55;background:#f4f4f4;border-radius:10px;padding:8px 12px;margin-top:8px;color:#333}
+
+/* 세로 화면 안내 */
+#rotate{position:fixed;inset:0;display:none;align-items:center;justify-content:center;text-align:center;
+  background:#1f2a44;color:#fff;font-size:20px;line-height:1.6;z-index:100;padding:24px}
+@media (orientation:portrait) and (max-width:820px) and (pointer:coarse){ #rotate{display:flex} }
+</style>
+</head>
+<body>
+<div id="wrap">
+<div id="stage">
+  <div id="top">
+    <div id="stageName">연습</div>
+    <div id="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="dateText">2026. 7.</span></div>
+    <div id="meta"><span id="progress"></span><span id="score">0점</span>
+      <button class="iconbtn" id="soundBtn" type="button">소리 켜기</button>
+      <button class="iconbtn" id="helpBtn" type="button">도움말</button></div>
+  </div>
+
+  <div id="rules"><h3>규칙판</h3><div id="ruleList"></div></div>
+
+  <div id="cardArea">
+    <div id="card" role="group" aria-label="심사 카드">
+      <div class="stampHint" id="hintL">확인 필요</div>
+      <div class="stampHint" id="hintR">심사 진행</div>
+      <div class="stampHint" id="hintU">수의계약</div>
+      <div id="cardBody"></div>
+    </div>
+    <div id="timerWrap"><div id="timer"><div id="timerFill"></div></div><span id="timerLbl">빨리 판정하면 +50</span></div>
+    <div id="tutorialTip"></div>
+    <div id="banner"></div>
+  </div>
+
+  <div id="botPanel">
+    <div id="bubble" aria-live="polite"></div>
+    <svg id="bot" viewBox="0 0 200 220" aria-hidden="true">
+      <rect x="40" y="150" width="34" height="14" rx="7" fill="#3d56c9" transform="rotate(-25 57 157)"/>
+      <rect x="126" y="150" width="34" height="14" rx="7" fill="#3d56c9" transform="rotate(25 143 157)"/>
+      <rect x="55" y="128" width="90" height="72" rx="24" fill="#5b7cfa"/>
+      <rect x="72" y="146" width="56" height="30" rx="10" fill="#dfe6ff"/>
+      <circle cx="86" cy="161" r="5" fill="#5b7cfa"/><circle cx="100" cy="161" r="5" fill="#f2a516"/><circle cx="114" cy="161" r="5" fill="#14915f"/>
+      <rect x="92" y="104" width="16" height="30" rx="7" fill="#3d56c9"/>
+      <circle cx="100" cy="64" r="52" fill="#ffffff" stroke="#3d56c9" stroke-width="12"/>
+      <path d="M62 44 A44 44 0 0 1 92 24" stroke="#cfe0ff" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <g class="m-normal"><circle cx="82" cy="62" r="7" fill="#1f2a44"/><circle cx="118" cy="62" r="7" fill="#1f2a44"/>
+        <path d="M84 84 Q100 94 116 84" stroke="#1f2a44" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+      <g class="m-happy" style="display:none"><path d="M73 65 Q82 54 91 65 M109 65 Q118 54 127 65" stroke="#1f2a44" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M80 80 Q100 102 120 80 Z" fill="#1f2a44"/></g>
+      <g class="m-oops" style="display:none"><circle cx="82" cy="64" r="6" fill="#1f2a44"/><circle cx="118" cy="64" r="6" fill="#1f2a44"/>
+        <path d="M86 90 Q100 81 114 90" stroke="#1f2a44" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M136 36 q6 10 0 14 q-6 -4 0 -14z" fill="#7cc4ff"/></g>
+      <g class="m-alert" style="display:none"><circle cx="82" cy="60" r="9" fill="#1f2a44"/><circle cx="118" cy="60" r="9" fill="#1f2a44"/>
+        <circle cx="100" cy="88" r="7" fill="#1f2a44"/></g>
+    </svg>
+    <div id="botName">살펴봇</div>
+    <div id="botNote">AI 조수(가상 캐릭터) · 말은 참고용</div>
+  </div>
+
+  <div id="controls">
+    <button class="act" id="btnL" type="button">← 확인 필요<small>실체가 의심될 때</small></button>
+    <button class="act" id="btnU" type="button">↑ 수의계약<small>지정 기간 안</small></button>
+    <button class="act" id="btnR" type="button">심사 진행 →<small>단서 없음</small></button>
+  </div>
+
+  <div id="toast" aria-live="polite"></div>
+
+  <div id="title">
+    <svg id="titleBot" viewBox="0 0 200 220" aria-hidden="true"></svg>
+    <div class="tb">
+      <div id="zipWarn">압축 파일 미리보기에서 열린 것 같아요.<br>압축 파일을 마우스 오른쪽 버튼으로 누르고 [모두 압축 풀기] → 풀린 폴더의 index.html을 열어 주세요.</div>
+      <h1>살펴봇 공정심사실</h1>
+      <p class="sub">AI는 근거를, 결정은 내가!</p>
+      <p class="desc">당신은 가상의 ‘공정조달 심사실’에 새로 온 심사관입니다.<br>AI 조수 살펴봇이 근거를 짚어 주지만, 가끔 틀려요.<br>바뀌는 조달 규칙에 맞춰 기업 카드를 판정해 보세요. (3~4분)</p>
+      <p class="notice">등장 기업·인물·단서는 모두 가상이며, 살펴봇은 조달청의 실제 시스템이 아닙니다.</p>
+      <button class="primary" id="startSound" type="button">소리 켜고 시작</button>
+      <button class="secondary" id="startMute" type="button">소리 없이 시작</button>
+      <button class="secondary" id="titleHelp" type="button">도움말</button>
+      <div class="proto">프로토타입 v0.2 · 그래픽은 임시 · 마우스·키보드 지원(PC 권장)</div>
+    </div>
+  </div>
+
+  <div class="overlay" id="modal" role="dialog" aria-modal="true"><div class="box" id="modalBox"></div></div>
+</div>
+</div>
+<div id="rotate">화면을 가로로 돌려 주세요.<br>이 게임은 가로 화면(PC 권장)에 맞춰져 있어요.</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- 출처 ---------- */
+var SRC = {
+  woman: '조달청 보도자료(2025.9.16) — 적격심사 신인도 평가 등에서 여성·창업기업 우대',
+  deposit: '조달청 보도자료(2026.7.13 「‘유령기업·묻지마 투찰’ 퇴출」, 2026.7.23 「9개품목 입찰보증금 의무화」)',
+  probe: '조달청 보도자료(2026.9.10 「불공정행위에 엄정 대응, 조달기업은 더욱 두텁게 보호」)',
+  innov: '조달청 혁신제품 지정 안내 — 지정 후 3년 수의계약, 보도자료(2025.10.31) — 최대 6년',
+  excel: '조달청 보도자료(2026.7.29) — 우수조달물품 수의계약 기본 3년 + 연장 최대 3년',
+  fake: '의심 단서는 게임용 가상 설정이에요.'
+};
+
+/* ---------- 살펴봇의 버릇(오판 패턴) ---------- */
+var HABITS = {
+  record: ['실적 편견', '납품 실적이 적으면 무조건 의심해요.'],
+  skip:   ['숨은 정보 건너뛰기', '점선 칸을 열어 보지 않고 말해요.'],
+  old:    ['지난 규칙 습관', '규칙이 바뀐 걸 깜빡해요.'],
+  badge:  ['표시만 보기', '표시(배지) 하나만 보고 결론을 내려요.'],
+  data:   ['데이터 과신', '데이터 신호를 사실처럼 믿어요.'],
+  one:    ['한 가지만 보기', '조건 하나만 맞으면 끝이라고 생각해요.']
+};
+
+/* ---------- 가상 기업 ---------- */
+var CO = {
+  doran:  {name:'도란도란책상', badges:[['일반','normal']], item:'사무용 책상',
+           rows:[['사업장','경기 ○○시 공장'],['직원','24명'],['납품 실적','최근 3년 41건']]},
+  kkam:   {name:'깜빡이조명', badges:[['일반','normal']], item:'LED 조명',
+           rows:[['사업장','공유오피스 1좌석'],['직원','0명'],['납품 실적','없음']],
+           hidden:['같은 주소 입찰','다른 업체 5곳이 같은 주소']},
+  saessak:{name:'새싹로봇연구소', badges:[['창업기업','start']], item:'방역 로봇',
+           rows:[['사업장','대전 ○○구 연구동'],['직원','6명'],['납품 실적','1건']],
+           hidden:['현장 사진','연구실 가동 중 · 시제품 3대']},
+  deunde: {name:'든든안전화', badges:[['여성기업','women']], item:'작업용 안전화',
+           rows:[['사업장','충북 ○○군 공장'],['직원','15명'],['확인서','여성기업 확인서 제출']],
+           hidden:['현장 사진','생산 라인 가동 중']},
+  malkkeum:{name:'말끔청소기', badges:[['일반','normal']], item:'업소용 청소기',
+           rows:[['사업장','서울 ○○구 상가 2층'],['직원','12명'],['납품 실적','최근 3년 9건']],
+           hidden:['현장 사진','빈 사무실 · 간판 없음']},
+  bareun: {name:'바른의자', badges:[['일반','normal']], item:'사무용 의자',
+           rows:[['사업장','경남 ○○시 공장'],['직원','31명'],['납품 실적','최근 3년 57건']]},
+  solsol: {name:'솔솔환기팬', badges:[['일반','normal']], item:'환기팬',
+           rows:[['사업장','인천 ○○구 공장'],['직원','9명'],['연락','대표번호 연결 확인']],
+           hidden:['현장 사진','창고에 완제품 적재']},
+  ssukssuk:{name:'쑥쑥종이', badges:[['일반','normal']], item:'복사용지',
+           rows:[['사업장','공유오피스'],['직원','1명'],['연락','대표번호 연결 안 됨']],
+           hidden:['같은 날 입찰','다른 이름으로 3건 동시 입찰']},
+  dandan: {name:'단단헬멧', badges:[['일반','normal'],['우려 품목','warn']], item:'헬멧',
+           rows:[['사업장','경북 ○○시 공장'],['직원','22명'],['입찰보증금','확인 안 됨']]},
+  ttoryeot:{name:'또렷계측', badges:[['일반','normal'],['우려 품목','warn']], item:'오실로스코프',
+           rows:[['사업장','경기 ○○시 연구동'],['직원','17명'],['입찰보증금','납부 완료']]},
+  baeum:  {name:'배움교구', badges:[['일반','normal'],['우려 품목','warn']], item:'교육훈련장비',
+           rows:[['사업장','광주 ○○구 공장'],['직원','20명'],['납품 실적','최근 3년 33건']],
+           hidden:['입찰보증금','확인 안 됨']},
+  baeum2: {name:'배움교구', badges:[['일반','normal'],['우려 품목','warn']], item:'교육훈련장비',
+           rows:[['사업장','광주 ○○구 공장'],['직원','20명'],['입찰보증금','납부 완료']]},
+  bandeut:{name:'반듯프린터', badges:[['일반','normal']], item:'레이저 프린터',
+           rows:[['사업장','경기 ○○시 오피스텔'],['직원','2명'],['납품 실적','없음']],
+           hidden:['현장 사진','사무실 없음 · 우편함만 있음']},
+  kkomkkom:{name:'꼼꼼소화기', badges:[['여성기업','women']], item:'소화기',
+           rows:[['사업장','전북 ○○시 공장'],['직원','18명'],['입찰 횟수','이번 달 12건']],
+           hidden:['현장 사진','공장 가동 · 납품 이행 100%']},
+  teunteun:{name:'튼튼삽', badges:[['일반','normal']], item:'제설용 삽',
+           rows:[['사업장','강원 ○○군 공장'],['직원','11명'],['납품 실적','최근 3년 24건']]},
+  hwikhwik:{name:'휙휙드론', badges:[['일반','normal']], item:'소형 드론',
+           rows:[['사업장','가상오피스'],['직원','0명'],['연락','대표번호 없음']]},
+  hwikhwik2:{name:'휙휙드론', badges:[['일반','normal'],['의심업체 선별','flag']], item:'소형 드론',
+           rows:[['사업장','가상오피스'],['직원','0명'],['입찰보증금','확인 안 됨']]},
+  pingping:{name:'핑핑무전기', badges:[['일반','normal'],['의심업체 선별','flag']], item:'휴대용 무전기',
+           rows:[['사업장','공유오피스 1좌석'],['직원','0명'],['입찰보증금','납부 완료']]},
+  sandeul:{name:'산들공기', badges:[['혁신제품','innov']], item:'교실 공기정화 시스템',
+           rows:[['지정','혁신제품 2025.3 지정(게임 설정)'],['사업장','세종 ○○ 공장'],['직원','22명']]},
+  ujik:   {name:'우직한펌프', badges:[['우수조달물품','excel']], item:'소방 펌프',
+           rows:[['지정','우수조달물품 2018.5 지정(게임 설정)'],['사업장','경북 ○○시 공장'],['직원','40명']],
+           hidden:['지정 기간','2018.5~2024.5 (연장 포함, 만료)']},
+  saessak2:{name:'새싹로봇연구소', badges:[['창업기업','start'],['혁신제품','innov']], item:'방역 로봇',
+           rows:[['지정','혁신제품 2026.10 지정(게임 설정)'],['직원','6명 → 14명'],['납품 실적','2건']]},
+  ssingssing:{name:'씽씽휠체어', badges:[['우수조달물품','excel']], item:'전동 휠체어',
+           rows:[['지정','우수조달물품 2023.4 지정(게임 설정)'],['사업장','부산 ○○구 공장'],['직원','35명']],
+           hidden:['지정 기간','2023.4~2026.4 → 연장 승인, 2029.4까지']},
+  goreun: {name:'고른저울', badges:[['일반','normal']], item:'전자 저울',
+           rows:[['사업장','충남 ○○시 공장'],['직원','13명'],['납품 실적','최근 3년 19건']]}
+};
+function card(co, o){ return Object.assign({}, CO[co], o); }
+
+/* ---------- 단계와 카드 ---------- */
+var STAGES = [
+  { id:0, name:'연습', date:'2026. 7.', tutorial:true, leftSub:'실체가 의심될 때',
+    cards:[
+      card('doran', {ans:'R', bot:{row:2, dir:'R', ok:true, say:'납품 실적이 꾸준해요. 진행해도 좋겠어요.'},
+        tip:'카드를 오른쪽으로 밀거나 [심사 진행 →] 버튼을 누르세요', why:'의심 단서가 없는 성실한 기업이에요.'}),
+      card('hwikhwik', {ans:'L', bot:{row:1, dir:'L', ok:true, say:'직원이 0명, 사업장은 가상오피스예요. 수상해요.'},
+        tip:'실체가 의심되면 왼쪽으로! [← 확인 필요]', why:'직원 0명, 가상오피스, 대표번호 없음. 실체가 의심돼요.'}),
+      card('ssukssuk', {ans:'L', requireReveal:true, bot:{row:'h', dir:'L', ok:true, say:'점선 칸에 뭔가 걸리는 게 있어요. 눌러서 확인해 보세요.'},
+        tip:'먼저 점선 칸(숨은 정보)을 눌러 확인한 뒤 판정하세요', tipAfter:'좋아요! 이제 판정하세요', why:'같은 날 다른 이름으로 3건 입찰했어요. 실체가 의심돼요.'})
+    ]},
+  { id:1, name:'1단계 · 기본 심사', date:'2026. 7.', leftSub:'실체가 의심될 때',
+    intro:{title:'연습 끝! 1단계 · 기본 심사', body:'<p>이제 진짜 심사예요. 카드 8장을 판정하세요.</p><p><b>← 확인 필요</b>: 주소·직원·연락처 등 실체가 의심될 때(게임 속 행동)<br><b>심사 진행 →</b>: 의심 단서가 없을 때</p><p>살펴봇의 말은 <b>참고용</b>이에요. 살펴봇에게는 몇 가지 <b>버릇</b>이 있어요. 잡아내 보세요!</p>'},
+    cards:[
+      card('doran', {ans:'R', bot:{row:2, dir:'R', ok:true, say:'납품 실적이 꾸준해요. 진행!'}, why:'의심 단서가 없는 성실한 기업이에요.'}),
+      card('kkam', {ans:'L', bot:{row:0, dir:'L', ok:true, say:'사업장 주소가 수상해요. 확인이 필요해 보여요.'}, why:'직원 0명, 공유오피스 1좌석, 같은 주소 업체 5곳. 실체가 의심돼요.', src:SRC.fake}),
+      card('saessak', {ans:'R', sprout:true, bot:{row:2, dir:'L', ok:false, habit:'record', say:'납품 실적이 1건뿐이에요! 확인이 필요할까요?'},
+        why:'실적이 적다는 것만으로는 의심 사유가 아니에요. 사업장·직원·현장 모두 멀쩡하죠. 조달청은 적격심사 신인도 평가 등에서 창업기업을 우대해요.', src:SRC.woman}),
+      card('deunde', {ans:'R', bot:{row:2, dir:'R', ok:true, say:'여성기업 확인서가 있어요. 진행!'}, why:'의심 단서가 없고, 여성기업은 신인도 평가 우대 대상이에요.', src:SRC.woman}),
+      card('malkkeum', {ans:'L', bot:{row:1, dir:'R', ok:false, habit:'skip', say:'서류는 깔끔해요. 바로 진행해요!'}, why:'서류는 멀쩡해도 현장이 비어 있고 간판도 없어요. 숨은 정보까지 확인해야 해요.', src:SRC.fake}),
+      card('bareun', {ans:'R', bot:{row:2, dir:'R', ok:true, say:'실적 많고 깔끔해요. 진행!'}, why:'의심 단서가 없는 성실한 기업이에요.'}),
+      card('solsol', {ans:'R', bot:{row:2, dir:'R', ok:true, say:'연락도 잘 돼요. 진행!'}, why:'의심 단서가 없어요.'}),
+      card('ssukssuk', {ans:'L', bot:{row:'h', dir:'L', ok:true, say:'점선 칸에 입찰 기록이 있어요. 한번 보세요.'}, why:'연락이 안 되고, 같은 날 다른 이름으로 3건 입찰했어요.', src:SRC.fake})
+    ]},
+  { id:2, name:'2단계 · 무분별 입찰 근절', date:'2026. 8. 3.', leftSub:'의심·보증금 미확인',
+    cards:[
+      card('dandan', {ans:'L',
+        rule:{date:'2026. 8. 3.', key:'우려 품목 입찰보증금', label:'새 규칙', text:'<b>우려 품목</b>(9개): 입찰자 <b>모두</b> 보증금. 미확인이면 ←',
+          body:'<p>2026년 8월 3일부터 조달청이 공고한 <b>‘무분별입찰 우려 품목’</b>(헬멧, 오실로스코프, 교육훈련장비 등 9개)에 입찰하면 <b>모든 업체</b>가 <b>입찰보증금</b>을 내야 해요.</p><p>의심 판정이 아니라 <b>품목 조건</b>이에요. <span class="badge b-warn">우려 품목</span> 카드는 보증금 납부를 확인하세요.<br>납부 완료 → <b>심사 진행</b> · 확인 안 됨 → <b>← 확인 필요</b></p>', src:SRC.deposit},
+        bot:{row:1, dir:'R', ok:false, habit:'old', say:'지난달처럼 공장도 있고 직원도 많아요. 진행!'},
+        why:'8월 3일부터 우려 품목은 입찰자 모두 입찰보증금을 내야 해요. 보증금이 확인되지 않았으니 먼저 확인이 필요해요.', src:SRC.deposit}),
+      card('ttoryeot', {ans:'R', bot:{row:-1, dir:'L', ok:false, habit:'badge', say:'우려 품목이에요! 의심 업체예요. 멈춰요!'},
+        why:'우려 품목은 ‘의심 업체’라는 뜻이 아니라 입찰 조건이에요. 보증금을 냈으니 정상적으로 심사를 진행해요.', src:SRC.deposit}),
+      card('doran', {ans:'R', bot:{row:-1, dir:'R', ok:true, say:'우려 품목 표시가 없어요. 진행!'}, why:'우려 품목이 아니고 의심 단서도 없어요.'}),
+      card('bandeut', {ans:'L', radar:true,
+        rule:{date:'2026. 9. 11.', key:'직권조사', label:'새 규칙', text:'신고 없이도 <b>직권조사</b> → 살펴봇 <b>데이터 레이더</b>(가상)',
+          body:'<p>2026년 9월 11일부터 조달청은 신고가 없어도 언론보도, 납품검사·품질점검 결과, 반복 위반 이력 등으로 불공정행위가 의심되면 <b>직권조사</b>를 할 수 있어요.</p><p>게임에서는 이런 단서를 살펴봇의 <b>데이터 레이더</b>(가상 기능)로 보여 줘요. 신호는 단서일 뿐, <b>판단은 심사관 몫</b>이에요.</p>', src:SRC.probe},
+        bot:{row:'h', dir:'L', ok:true, say:'납품검사 불합격 이력이 3번 있어요. 숨은 정보를 확인해 보세요.'}, why:'현장에 사무실이 없고 우편함만 있어요. 실체가 의심돼요.', src:SRC.fake}),
+      card('kkomkkom', {ans:'R', radar:true, bot:{row:2, dir:'L', ok:false, habit:'data', say:'이번 달 입찰이 많아요! 의심 기업 같아요.'},
+        why:'데이터 신호는 단서일 뿐이에요. 숨은 정보를 보면 공장이 돌아가고 납품도 잘 지켰어요. 확인은 사람이 해요.'}),
+      card('baeum', {ans:'L', radar:true, bot:{row:'h', dir:'L', ok:true, say:'우려 품목이네요. 점선 칸에서 보증금 납부를 확인해 보세요.'}, why:'우려 품목인데 입찰보증금이 확인되지 않았어요.', src:SRC.deposit}),
+      card('hwikhwik2', {ans:'L', radar:true,
+        rule:{date:'2026. 11. 1.', key:'의심업체 입찰보증금', label:'새 규칙', text:'데이터로 <b>선별된 의심업체</b>도 보증금',
+          body:'<p>2026년 11월 1일부터 조달청이 물품 입찰에서 <b>데이터로 골라낸 페이퍼컴퍼니 의심업체</b>도 입찰보증금을 내야 해요.</p><p><span class="badge b-flag">의심업체 선별</span> 표시가 있으면 보증금 납부를 확인하세요. 실체가 의심되는 단서도 함께 보세요.</p>', src:SRC.deposit},
+        bot:{row:2, dir:'L', ok:true, say:'의심업체로 선별됐는데 보증금이 확인 안 돼요.'}, why:'선별된 의심업체인데 입찰보증금이 확인되지 않았어요.', src:SRC.deposit}),
+      card('teunteun', {ans:'R', radar:true, bot:{row:-1, dir:'R', ok:true, say:'이상 신호가 없어요. 진행!'}, why:'의심 단서가 없어요.'}),
+      card('pingping', {ans:'L', radar:true, bot:{row:2, dir:'R', ok:false, habit:'one', say:'보증금을 냈네요. 그럼 진행!'},
+        why:'보증금을 냈어도 직원 0명, 공유오피스 1좌석이라는 실체 의심 단서는 그대로예요. 규칙은 겹쳐서 적용돼요.', src:SRC.fake})
+    ]},
+  { id:3, name:'3단계 · 혁신제품 수의계약', date:'2026. 12.', up:true, leftSub:'의심·보증금 미확인',
+    cards:[
+      card('sandeul', {ans:'U', radar:true,
+        rule:{date:'현행 제도', key:'혁신제품·우수조달물품 수의계약', label:'알아 둘 제도', text:'<b>혁신제품·우수조달물품</b>: 지정 기간 안이면 <b>↑ 수의계약</b>',
+          body:'<p><span class="badge b-innov">혁신제품</span>은 지정 후 3년 동안 수요기관이 <b>수의계약</b>으로 살 수 있어요(연장하면 최대 6년).</p><p><span class="badge b-excel">우수조달물품</span>도 <b>기본 3년 + 연장 최대 3년</b> 동안 수의계약이 가능해요.</p><p>지정 기간 안이면 <b>↑ 위로</b>! 기간이 끝났으면 <b>심사 진행 →</b>으로 일반 심사.</p>', src:SRC.innov + ' / ' + SRC.excel},
+        bot:{row:0, dir:'U', ok:true, say:'혁신제품 지정 2년 차예요. 수의계약 대상!'}, why:'혁신제품 지정 기간 안이라 수의계약이 가능해요.', src:SRC.innov}),
+      card('doran', {ans:'R', radar:true, bot:{row:-1, dir:'R', ok:true, say:'일반 기업이에요. 진행!'}, why:'혁신제품·우수조달물품이 아니고 의심 단서도 없어요.'}),
+      card('ujik', {ans:'R', radar:true, bot:{row:0, dir:'U', ok:false, habit:'skip', say:'우수조달물품이에요! 수의계약!'},
+        why:'우수조달물품 수의계약은 기본 3년 + 연장 최대 3년이에요. 숨은 정보를 보면 이미 기간이 끝났으니 일반 심사예요.', src:SRC.excel}),
+      card('kkam', {ans:'L', radar:true, bot:{row:0, dir:'L', ok:true, say:'또 그 공유오피스 주소예요! 확인 필요!'}, why:'실체가 의심돼요.', src:SRC.fake}),
+      card('saessak2', {ans:'U', radar:true, sprout:true, bot:{row:2, dir:'L', ok:false, habit:'record', say:'납품 실적이 2건뿐… 확인이 필요할까요?'},
+        why:'혁신제품으로 지정된 제품이에요. 실적이 적어도 지정 기간 안이면 수의계약으로 살 수 있어요.', src:SRC.innov}),
+      card('baeum2', {ans:'R', radar:true, bot:{row:2, dir:'R', ok:true, say:'우려 품목이지만 보증금 납부 완료! 진행!'}, why:'보증금을 냈고 의심 단서도 없어요.', src:SRC.deposit}),
+      card('ssingssing', {ans:'U', radar:true, bot:{row:0, dir:'R', ok:false, habit:'skip', say:'지정된 지 3년이 지났어요. 일반 심사!'},
+        why:'처음 3년이 지났어도 연장 승인을 받아 2029년 4월까지 유효해요. 숨은 정보를 보면 알 수 있어요.', src:SRC.excel}),
+      card('goreun', {ans:'R', radar:true, bot:{row:-1, dir:'R', ok:true, say:'일반 기업, 단서 없음. 진행!'}, why:'의심 단서가 없어요.'})
+    ]}
+];
+
+var BASE_RULES = [
+  {date:'기본', text:'실체가 의심되면 <b>← 확인 필요</b>'},
+  {date:'기본', text:'단서가 없으면 <b>심사 진행 →</b>'},
+  {date:'현행', text:'여성·창업기업은 신인도 평가 <b>우대</b>'}
+];
+
+/* ---------- 상태 ---------- */
+var state = { scale:1, si:0, ci:0, score:0, log:[], revealed:false, busy:true, shownAt:0, started:false,
+  t0:0, firstScoredAt:null, firstCorrectAt:null, sprout1:null, drag:null, rules:[], card:null,
+  modalCb:null, modalAt:0, modalKind:'', lastKeyAt:-1e9, helpPausedAt:null, resultShown:false, holdMs:0 };
+var SHOW_TESTLOG = !/[?&]notest/.test(location.search);
+var TIMER_MS = 6000;
+
+var $ = function(s){ return document.querySelector(s); };
+var stageEl = $('#stage');
+
+function fit(){
+  var vv = window.visualViewport;
+  var W = vv ? vv.width : document.documentElement.clientWidth;
+  var H = vv ? vv.height : document.documentElement.clientHeight;
+  var s = Math.min(W/1280, H/720);
+  state.scale = s;
+  stageEl.style.transform = 'translate(' + Math.max(0,(W-1280*s)/2) + 'px,' + Math.max(0,(H-720*s)/2) + 'px) scale(' + s + ')';
+}
+window.addEventListener('resize', fit);
+window.addEventListener('orientationchange', fit);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', fit);
+fit();
+
+/* ---------- 소리 (WebAudio 합성, 시작 버튼을 누른 뒤에만) ---------- */
+var ac = null, soundOn = false;
+function initAudio(){
+  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); }
+  catch(e){ ac = null; }
+}
+function tone(freq, dur, type, vol, when){
+  if (!soundOn || !ac) return;
+  var t = ac.currentTime + (when || 0), o = ac.createOscillator(), g = ac.createGain();
+  o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.15, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur + 0.03);
+}
+function noise(dur, vol, freq){
+  if (!soundOn || !ac) return;
+  var n = Math.floor(ac.sampleRate * dur), buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
+  for (var i = 0; i < n; i++) d[i] = (Math.random()*2 - 1) * (1 - i/n);
+  var src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  src.buffer = buf; f.type = 'lowpass'; f.frequency.value = freq || 800; g.gain.value = vol || 0.2;
+  src.connect(f); f.connect(g); g.connect(ac.destination); src.start();
+}
+var SFX = {
+  ok: function(){ tone(660,.12,'triangle',.16); tone(990,.16,'triangle',.14,.09); },
+  combo: function(){ tone(660,.1,'triangle',.15); tone(880,.1,'triangle',.15,.08); tone(1320,.18,'triangle',.14,.16); },
+  bad: function(){ tone(196,.3,'sawtooth',.07); },
+  stamp: function(){ noise(.12,.35,420); tone(90,.15,'sine',.25); },
+  rule: function(){ [523,659,784,1046].forEach(function(f,i){ tone(f,.18,'triangle',.14,i*.1); }); },
+  whoosh: function(){ noise(.16,.1,1800); },
+  reveal: function(){ tone(880,.07,'sine',.12); tone(1175,.09,'sine',.1,.06); }
+};
+function setSound(on){
+  soundOn = on; if (on) initAudio();
+  $('#soundBtn').textContent = on ? '소리 끄기' : '소리 켜기';
+}
+
+/* ---------- 버튼 클릭: 키보드가 만든 중복 클릭만 거른다 ---------- */
+// 버튼에 포커스가 남은 채 Enter·Space를 누르면 브라우저가 클릭을 한 번 더 만든다(detail 0).
+// 게임은 그 키를 keydown에서 이미 처리했으므로, 방금 처리한 키 직후의 detail 0 클릭만 무시한다.
+function onClick(el, fn){
+  el.addEventListener('click', function(e){
+    if (e.detail === 0 && performance.now() - state.lastKeyAt < 600) return;
+    if (e.detail > 0 && el.blur) el.blur();
+    fn(e);
+  });
+}
+
+/* ---------- 살펴봇 ---------- */
+var MOODS = ['normal','happy','oops','alert'];
+function mood(m){
+  MOODS.forEach(function(k){ var g = document.querySelector('#bot .m-' + k); if (g) g.style.display = (k === m) ? '' : 'none'; });
+}
+function botCopy(){ return $('#bot').innerHTML; }
+function say(html, radar){
+  $('#bubble').innerHTML = '<span class="tag">참고용</span>' + (radar ? '<span class="radar">데이터 레이더</span>' : '') + html;
+}
+$('#titleBot').innerHTML = botCopy();
+
+/* ---------- 규칙판 ---------- */
+function renderRules(newKey){
+  var html = '';
+  BASE_RULES.concat(state.rules).forEach(function(r){
+    html += '<div class="rule' + (r.key && r.key === newKey ? ' new' : '') + '"><span class="d">' + r.date + '</span>' + r.text + '</div>';
+  });
+  var list = $('#ruleList'); list.innerHTML = html; list.scrollTop = list.scrollHeight;
+}
+
+/* ---------- 접근성: 가려진 영역은 inert ---------- */
+var GAME_PARTS = ['#top','#rules','#cardArea','#botPanel','#controls'];
+function updateInert(){
+  var modalOn = $('#modal').classList.contains('on');
+  var titleOn = $('#title').style.display !== 'none';
+  GAME_PARTS.forEach(function(s){ $(s).inert = modalOn || titleOn; });
+  $('#title').inert = modalOn;
+}
+
+/* ---------- 모달 ---------- */
+function openModal(html, cb, kind){
+  $('#modalBox').innerHTML = html; $('#modal').classList.add('on');
+  state.modalCb = cb || null; state.modalAt = performance.now(); state.modalKind = kind || '';
+  $('#modalBox').scrollTop = 0; updateInert();
+  var b = $('#modalBox .primary');
+  if (b) { onClick(b, closeModal); setTimeout(function(){ try { b.focus({preventScroll:true}); } catch(e){ b.focus(); } $('#modalBox').scrollTop = 0; }, 30); }
+}
+function closeModal(){
+  if (!$('#modal').classList.contains('on')) return;
+  if (performance.now() - state.modalAt < 250) return; // 키를 빠르게 두 번 눌러 바로 닫히는 것 방지
+  $('#modal').classList.remove('on'); updateInert();
+  var cb = state.modalCb; state.modalCb = null; state.modalKind = '';
+  if (cb) cb();
+}
+
+/* ---------- 토스트 ---------- */
+var toastTimer = null;
+function toast(text, kind){
+  var t = $('#toast'); t.textContent = text; t.className = 'show ' + (kind || '');
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.className = ''; }, 900);
+}
+
+/* ---------- 카드 표시 ---------- */
+function curStage(){ return STAGES[state.si]; }
+function dirLabel(d){
+  if (d === 'L') return '← 확인 필요'; if (d === 'R') return '심사 진행 →'; return '↑ 수의계약';
+}
+var MAG = '<svg class="mag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M15 15l6 6"/></svg>';
+
+function renderCard(){
+  var c = state.card, st = curStage();
+  var h = '<div class="ctop"><div class="cname">' + c.name + '</div><span class="virtual">가상 기업</span></div><div class="badges" id="badges">';
+  c.badges.forEach(function(b){ h += '<span class="badge b-' + b[1] + '">' + b[0] + '</span>'; });
+  h += '</div><div class="item">품목 <b>' + c.item + '</b></div>';
+  c.rows.forEach(function(r, i){ h += '<div class="row" data-i="' + i + '"><span class="k">' + r[0] + '</span><span class="v">' + r[1] + '</span></div>'; });
+  if (c.hidden) {
+    h += '<div class="row hidden-row' + (c.requireReveal ? ' need' : '') + '" id="hiddenRow" role="button" tabindex="-1" data-i="h"><span class="k">' + MAG + '숨은 정보</span><span class="v">눌러서 확인</span></div>';
+  }
+  $('#cardBody').innerHTML = h;
+  var hr = $('#hiddenRow'); if (hr) hr.addEventListener('click', reveal);
+  var target = c.bot.row === -1 ? $('#badges') : (c.bot.row === 'h' ? hr : document.querySelector('#cardBody .row[data-i="' + c.bot.row + '"]'));
+  if (target) target.classList.add('hl');
+  $('#btnL').innerHTML = '← 확인 필요<small>' + st.leftSub + '</small>';
+  $('#controls').className = st.up ? 'upmode' : '';
+  $('#tutorialTip').textContent = c.tip || '';
+  $('#timerWrap').style.visibility = st.tutorial ? 'hidden' : 'visible';
+  var cardEl = $('#card'); cardEl.classList.remove('shake'); cardEl.style.transition = 'none'; cardEl.style.opacity = '0';
+  cardEl.style.transform = 'translateY(30px) scale(.96)';
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    if (state.card !== c || state.busy) return; // 등장 중 이미 판정했으면 되살리지 않음
+    cardEl.style.transition = ''; cardEl.style.opacity = '1'; cardEl.style.transform = '';
+  }); });
+  setHints(0, 0);
+}
+
+function reveal(){
+  if (state.revealed || state.busy || !state.card || !state.card.hidden) return;
+  state.revealed = true;
+  var hr = $('#hiddenRow');
+  hr.classList.remove('need'); hr.classList.add('open');
+  hr.innerHTML = '<span class="k">' + MAG + state.card.hidden[0] + '</span><span class="v">' + state.card.hidden[1] + '</span>';
+  if (state.card.tipAfter) $('#tutorialTip').textContent = state.card.tipAfter;
+  SFX.reveal();
+}
+
+function setTimerBar(fraction, ms){
+  var f = $('#timerFill'); f.style.transition = 'none'; f.style.width = (fraction * 100) + '%';
+  if (ms > 0) requestAnimationFrame(function(){ requestAnimationFrame(function(){ f.style.transition = 'width ' + ms + 'ms linear'; f.style.width = '0%'; }); });
+}
+function stopTimer(){
+  var f = $('#timerFill'); var w = getComputedStyle(f).width; f.style.transition = 'none'; f.style.width = w;
+}
+
+function showCard(){
+  var st = curStage(), c = st.cards[state.ci];
+  state.card = c; state.revealed = false; state.busy = true;
+  $('#progress').textContent = st.tutorial ? '연습 ' + (state.ci + 1) + '/' + st.cards.length : (state.ci + 1) + '/' + st.cards.length;
+  var go = function(){
+    state.busy = false;
+    renderCard();
+    var banner = '';
+    if (c.sprout && st.id === 3) banner = '1단계에서 만난 새싹로봇연구소가 돌아왔어요!' + (state.sprout1 === 'L' ? ' (그때 확인 필요로 보냈던 기업)' : '');
+    $('#banner').textContent = banner;
+    mood(c.bot.dir === 'L' ? 'alert' : 'normal');
+    say(c.bot.say, c.radar);
+    state.shownAt = performance.now();
+    if (!st.tutorial && state.firstScoredAt === null) state.firstScoredAt = state.shownAt;
+    if (!st.tutorial) setTimerBar(1, TIMER_MS);
+  };
+  if (c.rule) {
+    state.rules.push({date:c.rule.date, text:c.rule.text, key:c.rule.key});
+    $('#dateText').textContent = c.rule.date === '현행 제도' ? st.date : c.rule.date;
+    var cal = $('#calendar'); cal.classList.remove('flip'); void cal.offsetWidth; cal.classList.add('flip');
+    renderRules(c.rule.key); SFX.rule();
+    openModal('<span class="newrule">' + c.rule.label + ' · ' + c.rule.date + '</span><h2>' + c.rule.key + '</h2>' + c.rule.body +
+      '<div class="src">출처: ' + c.rule.src + '</div><button class="primary" type="button">알겠어요</button>', go, 'rule');
+  } else go();
+}
+
+/* ---------- 판정 ---------- */
+function setHints(dx, dy){
+  var T = 110;
+  $('#hintL').style.opacity = Math.min(1, Math.max(0, -dx / T));
+  $('#hintR').style.opacity = Math.min(1, Math.max(0, dx / T));
+  $('#hintU').style.opacity = curStage().up ? Math.min(1, Math.max(0, -dy / T)) : 0;
+}
+function clearDrag(){
+  var d = state.drag; if (!d) return;
+  try { $('#card').releasePointerCapture(d.id); } catch(e){}
+  state.drag = null; $('#card').classList.remove('dragging');
+}
+function shakeCard(){
+  var cardEl = $('#card'); cardEl.style.transform = ''; setHints(0, 0);
+  cardEl.classList.remove('shake'); void cardEl.offsetWidth; cardEl.classList.add('shake');
+}
+
+function decide(dir){
+  var st = curStage(), c = state.card;
+  if (state.busy || !c || $('#modal').classList.contains('on')) return;
+  if (dir === 'U' && !st.up) return;
+  clearDrag();
+  if (c.requireReveal && !state.revealed) {
+    shakeCard(); $('#tutorialTip').textContent = '점선 칸(숨은 정보)을 먼저 눌러 보세요!';
+    return;
+  }
+  var correct = dir === c.ans;
+  if (st.tutorial && !correct) {
+    shakeCard(); SFX.bad(); mood('oops'); say('앗, 반대쪽이에요. 다시 해 볼까요? ' + c.tip);
+    return;
+  }
+  state.busy = true; stopTimer();
+  var now = performance.now(), dt = now - state.shownAt;
+  var gained = 0, corrected = false;
+  if (!st.tutorial) {
+    if (correct) {
+      gained = 100 + (dt < TIMER_MS ? 50 : 0);
+      if (!c.bot.ok) { gained += 50; corrected = true; }
+      if (state.firstCorrectAt === null) state.firstCorrectAt = now;
+    }
+    state.score += gained;
+    state.log.push({stage:st.id, name:c.name, dir:dir, ans:c.ans, correct:correct, botOk:c.bot.ok, habit:c.bot.habit || null,
+      followedWrongBot: !c.bot.ok && dir === c.bot.dir, hasHidden: !!c.hidden, revealed: state.revealed, dt:dt, sprout: !!c.sprout});
+    if (c.sprout && st.id === 1) state.sprout1 = dir;
+    $('#score').textContent = state.score + '점';
+  }
+  var cardEl = $('#card');
+  var tx = dir === 'L' ? -900 : (dir === 'R' ? 900 : 0), ty = dir === 'U' ? -800 : 40, rot = dir === 'L' ? -24 : (dir === 'R' ? 24 : 0);
+  cardEl.style.transform = 'translate(' + tx + 'px,' + ty + 'px) rotate(' + rot + 'deg)'; cardEl.style.opacity = '0';
+  setHints(0, 0); SFX.whoosh(); setTimeout(SFX.stamp, 120);
+
+  setTimeout(function(){
+    if (correct) {
+      if (corrected) {
+        var hb = HABITS[c.bot.habit];
+        SFX.combo(); mood('oops'); say('앗, 제 버릇 <b>‘' + hb[0] + '’</b>이 나왔네요. 역시 결정은 심사관님!');
+        toast('살펴봇의 버릇을 잡았어요! +' + gained, 'good');
+      } else { SFX.ok(); mood('happy'); say(st.tutorial ? '좋아요! ' + c.why : '정답이에요!'); toast(st.tutorial ? '좋아요!' : '정답 +' + gained, 'good'); }
+      setTimeout(next, st.tutorial ? 1400 : (corrected ? 1500 : 650)); // 버릇을 잡았을 때는 살펴봇 말을 읽을 시간
+    } else {
+      SFX.bad(); mood('oops');
+      var habitLine = '';
+      if (!c.bot.ok && dir === c.bot.dir) {
+        var h2 = HABITS[c.bot.habit];
+        say('제 말만 믿으면 안 돼요. 참고만 해 주세요!');
+        habitLine = '<div class="habit">살펴봇의 버릇 <b>‘' + h2[0] + '’</b>: ' + h2[1] + '</div>';
+      } else say(c.bot.ok ? '음, 제가 짚은 근거를 한 번 더 봐 주세요.' : '이번엔 저도 헷갈렸어요.');
+      var peek = (c.hidden && !state.revealed) ? '<div class="peek">' + MAG + '숨은 정보 — ' + c.hidden[0] + ': <b>' + c.hidden[1] + '</b></div>' : '';
+      openModal('<h2>아쉬워요</h2><p>정답은 <span class="ans">' + dirLabel(c.ans) + '</span></p><p>' + c.why + '</p>' + peek + habitLine +
+        (c.src ? '<div class="src">근거: ' + c.src + '</div>' : '') + '<button class="primary" type="button">다음 카드</button>', next, 'wrong');
+    }
+  }, 300);
+}
+
+function next(){
+  var st = curStage();
+  state.ci++;
+  if (state.ci < st.cards.length) return showCard();
+  if (st.tutorial) return goStage(state.si + 1);
+  var L = state.log.filter(function(x){ return x.stage === st.id; });
+  var ok = L.filter(function(x){ return x.correct; }).length;
+  var wrongBot = L.filter(function(x){ return !x.botOk; }).length;
+  var fixed = L.filter(function(x){ return !x.botOk && x.correct; }).length;
+  var last = state.si === STAGES.length - 1;
+  openModal('<h2>' + st.name + ' 끝!</h2><p>정답 <b>' + ok + '/' + L.length + '</b> · 살펴봇의 버릇 잡기 <b>' + fixed + '/' + wrongBot + '</b></p>' +
+    (last ? '' : '<p>다음 단계에서는 달력이 넘어가며 규칙이 바뀌어요.</p>') +
+    '<button class="primary" type="button">' + (last ? '결과 보기' : '다음 단계') + '</button>', function(){
+      if (last) showResult(); else goStage(state.si + 1);
+    }, 'stageEnd');
+}
+
+function goStage(i){
+  state.si = i; state.ci = 0; var st = curStage();
+  $('#stageName').textContent = st.name; $('#dateText').textContent = st.date;
+  $('#controls').className = st.up ? 'upmode' : '';
+  $('#banner').textContent = '';
+  renderRules(null);
+  if (st.intro) openModal('<h2>' + st.intro.title + '</h2>' + st.intro.body + '<button class="primary" type="button">시작</button>', showCard, 'intro');
+  else showCard();
+}
+
+/* ---------- 입력: 드래그 ---------- */
+var cardEl = $('#card');
+cardEl.addEventListener('pointerdown', function(e){
+  if (state.busy || state.drag || e.button !== 0 || e.target.closest('#hiddenRow')) return;
+  try { cardEl.setPointerCapture(e.pointerId); } catch(err){}
+  state.drag = {x:e.clientX, y:e.clientY, id:e.pointerId, dx:0, dy:0, card:state.card};
+  cardEl.classList.add('dragging');
+});
+cardEl.addEventListener('pointermove', function(e){
+  var d = state.drag; if (!d || d.id !== e.pointerId) return;
+  if (state.busy || d.card !== state.card) { clearDrag(); return; }
+  d.dx = (e.clientX - d.x) / state.scale; d.dy = (e.clientY - d.y) / state.scale;
+  var dy = curStage().up ? d.dy : d.dy * 0.25;
+  cardEl.style.transform = 'translate(' + d.dx + 'px,' + dy + 'px) rotate(' + (d.dx / 22) + 'deg)';
+  setHints(d.dx, d.dy);
+});
+cardEl.addEventListener('pointerup', function(e){
+  var d = state.drag; if (!d || d.id !== e.pointerId) return;
+  clearDrag();
+  if (state.busy || d.card !== state.card) return;
+  var T = 110;
+  if (curStage().up && d.dy < -T && Math.abs(d.dy) > Math.abs(d.dx)) return decide('U');
+  if (d.dx > T) return decide('R');
+  if (d.dx < -T) return decide('L');
+  cardEl.style.transform = ''; setHints(0, 0);
+});
+cardEl.addEventListener('pointercancel', function(e){
+  var d = state.drag; if (!d || d.id !== e.pointerId) return;
+  clearDrag(); if (!state.busy) { cardEl.style.transform = ''; setHints(0, 0); }
+});
+cardEl.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+/* ---------- 입력: 버튼·키보드 ---------- */
+onClick($('#btnL'), function(){ decide('L'); });
+onClick($('#btnR'), function(){ decide('R'); });
+onClick($('#btnU'), function(){ decide('U'); });
+onClick($('#soundBtn'), function(){ setSound(!soundOn); });
+
+document.addEventListener('keydown', function(e){
+  if ($('#modal').classList.contains('on')) {
+    var k = e.key;
+    if (k === 'Enter' || k === ' ' || k === 'Escape') {
+      e.preventDefault(); state.lastKeyAt = performance.now();
+      if (e.repeat) return;
+      // 결과 화면은 Space로는 닫히지 않고, Enter도 2초가 지난 뒤에만 닫힘(테스트 기록 보호)
+      if (state.modalKind === 'result' && (k !== 'Enter' || performance.now() - state.modalAt < 2000)) return;
+      if (k === 'Escape' && state.modalKind !== 'help') return; // Esc는 도움말만 닫음
+      closeModal();
+    }
+    return;
+  }
+  if ($('#title').style.display !== 'none') return;
+  if (e.repeat) { if (/^Arrow| $/.test(e.key)) e.preventDefault(); return; }
+  var used = true;
+  if (e.key === 'ArrowLeft') decide('L');
+  else if (e.key === 'ArrowRight') decide('R');
+  else if (e.key === 'ArrowUp') decide('U');
+  else if (e.key === ' ' || e.key === 'r' || e.key === 'R' || e.key === 'ㄱ') reveal();
+  else if (e.key === 'Enter') { /* 게임 중 Enter는 쓰지 않음 */ }
+  else used = false;
+  if (used) { e.preventDefault(); state.lastKeyAt = performance.now(); }
+});
+
+/* ---------- 결과 ---------- */
+function pct(a, b){ return b ? Math.round(a / b * 100) : 0; }
+function showResult(){
+  mood('happy'); say('수고했어요, 심사관님!');
+  var L = state.log, n = L.length;
+  var me = L.filter(function(x){ return x.correct; }).length;
+  var bot = L.filter(function(x){ return x.botOk; }).length;
+  var wrongBot = L.filter(function(x){ return !x.botOk; }).length;
+  var fixed = L.filter(function(x){ return !x.botOk && x.correct; }).length;
+  var followed = L.filter(function(x){ return x.followedWrongBot; }).length;
+  var hid = L.filter(function(x){ return x.hasHidden; }), rev = hid.filter(function(x){ return x.revealed; }).length;
+  var sprouts = L.filter(function(x){ return x.sprout; }), sproutOk = sprouts.filter(function(x){ return x.correct; }).length;
+  var avg = n ? L.reduce(function(a, x){ return a + x.dt; }, 0) / n : 0;
+  var acc = n ? me / n : 0;
+  var caught = {}, missed = {};
+  L.forEach(function(x){ if (!x.habit) return; if (x.correct) caught[x.habit] = 1; else missed[x.habit] = 1; });
+  Object.keys(caught).forEach(function(k){ if (missed[k]) delete caught[k]; });
+  var name = function(k){ return '‘' + HABITS[k][0] + '’'; };
+  var caughtList = Object.keys(caught).map(name).join(', ') || '없음';
+  var missedList = Object.keys(missed).map(name).join(', ');
+
+  var type;
+  if (followed >= 3) type = ['AI 짝꿍형', '살펴봇을 많이 믿었어요. 다음엔 근거를 한 번 더 눌러 봐요. AI는 참고, 판단은 사람!'];
+  else if (sprouts.length && sproutOk === sprouts.length && acc >= 0.8) type = ['기회 발굴형', '실적이 적은 새싹 기업에도 공정하게 기회를 줬어요. 그 기업이 혁신제품이 되어 돌아왔죠.'];
+  else if (hid.length && rev / hid.length >= 0.7 && acc >= 0.8) type = ['꼼꼼 검증형', '숨은 정보까지 확인하고 판단했어요. 근거를 보는 눈이 정확해요.'];
+  else if (avg < 3000 && acc >= 0.7) type = ['번개 판정형', '빠르고 정확해요. 바뀐 규칙에도 금방 적응했어요.'];
+  else type = ['새내기 심사관', '규칙이 바뀌면 정답도 바뀌어요. 한 판 더 하면 금방 늘어요!'];
+
+  function bar(label, v, color){ return '<div class="bar"><span class="lbl">' + label + '</span><span class="trk"><span class="fill" style="width:' + v + '%;background:' + color + '"></span></span><b>' + v + '%</b></div>'; }
+  var msg = me >= bot
+    ? 'AI 혼자 판정했다면 ' + bot + '/' + n + ', 당신이 함께하니 ' + me + '/' + n + '. <b>AI는 근거를, 결정은 사람이.</b>'
+    : '이번엔 살펴봇 혼자가 더 정확했어요(' + bot + '/' + n + ' vs ' + me + '/' + n + '). 숨은 정보를 열어 보면 역전할 수 있어요!';
+  var html = '<h2>심사 결과</h2>' +
+    '<div class="bars">' + bar('살펴봇 혼자', pct(bot, n), '#9fb2e6') + bar('나 + 살펴봇', pct(me, n), '#3d6df2') + '</div>' +
+    '<p style="font-size:16px;margin-top:2px">' + msg + '</p>' +
+    '<div class="typecard"><svg viewBox="0 0 200 220" width="80" height="88" aria-hidden="true">' + botCopy() + '</svg>' +
+    '<div><div class="tn">' + type[0] + '</div><div class="tm">' + type[1] + '</div></div></div>' +
+    '<div class="stats"><div class="stat"><div class="n">' + state.score + '</div><div class="l">점수</div></div>' +
+    '<div class="stat"><div class="n">' + fixed + '/' + wrongBot + '</div><div class="l">버릇 잡기</div></div>' +
+    '<div class="stat"><div class="n">' + rev + '/' + hid.length + '</div><div class="l">숨은 정보 확인</div></div>' +
+    '<div class="stat"><div class="n">' + (avg / 1000).toFixed(1) + '초</div><div class="l">카드당 판정</div></div></div>' +
+    '<div class="habits">잡아낸 살펴봇의 버릇: <b>' + caughtList + '</b>' + (missedList ? '<br>다음엔 이 버릇을 조심해요: ' + missedList : '') + '</div>' +
+    '<p style="font-size:15px;margin-top:8px">예고: 2027년 1월 1일부터 최근 1년간 2회 이상 입찰을 포기한 업체도 입찰보증금 대상이 될 예정이에요.<br>' +
+    '2025년 공공조달 238.5조원 중 중소기업이 149.5조원(62.7%). 공정한 심사는 모두의 일이에요. 불공정 행위는 <b>조달기업 불공정행위 신고센터</b>로.</p>' +
+    '<div class="src">출처: 조달청 보도자료(2026.6.26 공공조달 규모, 2026.7.13 입찰보증금 단계 강화) · 이 게임의 기업과 단서는 모두 가상입니다.</div>';
+  if (SHOW_TESTLOG) {
+    var stageAcc = [1,2,3].map(function(s){ var X = L.filter(function(x){ return x.stage === s; }); return s + '단계 ' + X.filter(function(x){ return x.correct; }).length + '/' + X.length; }).join(' · ');
+    var firstSec = (state.firstCorrectAt && state.firstScoredAt) ? ((state.firstCorrectAt - state.firstScoredAt) / 1000).toFixed(1) + '초' : '-';
+    var total = Math.round((performance.now() - state.t0) / 1000);
+    html += '<div class="testlog"><b>테스트 기록</b> · 첫 정답까지 ' + firstSec + ' · 총 ' + Math.floor(total / 60) + '분 ' + (total % 60) + '초 · ' + stageAcc +
+      ' · 살펴봇 오판 따라감 ' + followed + '회</div>';
+  }
+  html += '<button class="primary" type="button">처음으로</button>';
+  state.resultShown = true;
+  openModal(html, resetGame, 'result');
+}
+
+function resetGame(){
+  state.si = 0; state.ci = 0; state.score = 0; state.log = []; state.rules = []; state.sprout1 = null; state.started = false;
+  state.firstScoredAt = null; state.firstCorrectAt = null; state.card = null; state.busy = true; state.resultShown = false;
+  clearDrag();
+  $('#score').textContent = '0점'; $('#banner').textContent = ''; $('#progress').textContent = '';
+  $('#title').style.display = 'flex'; updateInert();
+  mood('normal'); say('안녕하세요, 심사관님! 저는 근거를 찾아 드리는 살펴봇이에요.');
+}
+
+/* ---------- 도움말 ---------- */
+function showHelp(){
+  if ($('#modal').classList.contains('on')) return;
+  if (state.started && state.busy) return; // 판정 직후 넘어가는 중에는 열지 않음
+  var pausing = state.started && state.card && !state.busy && !curStage().tutorial;
+  if (pausing) { stopTimer(); state.helpPausedAt = performance.now(); }
+  state.busy = true;
+  openModal('<h2>도움말</h2><p><b>조작</b>: 카드를 왼쪽·오른쪽(3단계는 위쪽)으로 밀거나, 아래 큰 버튼 또는 방향키를 쓰세요. 점선 칸은 눌러서(또는 스페이스바) 숨은 정보를 확인해요.</p>' +
+    '<p><b>살펴봇</b>은 조달청의 실제 시스템이 아닌 <b>가상 캐릭터</b>예요. 조달청이 ‘AI 기술평가’ 실증(2026.8)에서 밝힌 원칙, 곧 AI 분석자료는 ‘평가 참고용 보조자료’로 표시하고 최종 판단은 평가위원이 한다는 원칙을 빌려 왔어요.</p>' +
+    '<p>이 게임은 실제 조달 규칙을 바탕으로 <b>단순화</b>했어요. 기업 이름과 의심 단서는 모두 가상이고, ‘확인 필요’는 게임 속 행동이에요. 실제 심사는 여러 평가와 조사를 거쳐 이뤄져요.</p>' +
+    '<button class="primary" type="button">닫기</button>', function(){
+      if (!state.started) { state.busy = true; return; }
+      state.busy = false;
+      if (state.helpPausedAt !== null) {
+        var paused = performance.now() - state.helpPausedAt; state.helpPausedAt = null;
+        state.shownAt += paused;
+        var left = Math.max(0, TIMER_MS - (performance.now() - state.shownAt));
+        setTimerBar(left / TIMER_MS, left);
+      }
+    }, 'help');
+}
+onClick($('#helpBtn'), showHelp);
+onClick($('#titleHelp'), showHelp);
+
+/* ---------- 시작 ---------- */
+function start(withSound){
+  setSound(withSound);
+  $('#title').style.display = 'none';
+  state.started = true; state.t0 = performance.now(); state.rules = [];
+  updateInert();
+  goStage(0);
+}
+onClick($('#startSound'), function(){ start(true); });
+onClick($('#startMute'), function(){ start(false); });
+
+/* ---------- 자동 진행: #autotest(점검용) · #demo(시연 녹화용, 모달을 읽을 시간 확보) ---------- */
+function autoplay(delay, holdMs){
+  function step(){
+    if (state.resultShown) return;
+    if ($('#modal').classList.contains('on')) {
+      if (performance.now() - state.modalAt < holdMs) return setTimeout(step, delay);
+      state.modalAt = 0; closeModal(); return setTimeout(step, delay);
+    }
+    if (!state.busy && state.card) {
+      if (state.card.hidden && !state.revealed) { reveal(); return setTimeout(step, delay); }
+      decide(state.card.ans);
+    }
+    setTimeout(step, delay);
+  }
+  setTimeout(step, delay);
+}
+
+mood('normal'); say('안녕하세요, 심사관님! 저는 근거를 찾아 드리는 살펴봇이에요.');
+try { if (/\.zip[\\\/]/i.test(decodeURIComponent(location.href))) $('#zipWarn').style.display = 'block'; } catch(e){}
+updateInert();
+if (location.hash === '#autotest') { start(false); autoplay(40, 0); }
+else if (location.hash === '#demo') { start(false); autoplay(1100, 2500); }
+})();
+</script>
+</body>
+</html>
