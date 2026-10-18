@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>살펴봇 공정심사실 (프로토타입 v0.2)</title>
+<title>살펴봇 공정심사실 (프로토타입 v0.3)</title>
 <style>
 :root{
   --bg:#eef3fb; --panel:#ffffff; --ink:#1f2a44; --muted:#56617a; --line:#d9e1ef;
@@ -19,7 +19,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#c9d5ea;
   font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:var(--ink);
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 button{font-family:inherit;color:inherit}
-#wrap{position:fixed;inset:0;overflow:hidden}
+#wrap{position:fixed;inset:0;overflow:hidden;touch-action:none;overscroll-behavior:none}
 #stage{position:absolute;left:0;top:0;width:1280px;height:720px;background:var(--bg);
   border-radius:18px;overflow:hidden;transform-origin:0 0;box-shadow:0 10px 40px rgba(31,42,68,.18)}
 
@@ -75,9 +75,11 @@ button{font-family:inherit;color:inherit}
 .row .k{color:var(--muted);flex:none}
 .row .v{font-weight:700;text-align:right}
 .hl{background:var(--hl)!important;box-shadow:0 0 0 2px #e6c62f inset}
-.hidden-row{cursor:pointer;border:2px dashed #8ea4e0;background:#f2f6ff}
+.hidden-row{cursor:pointer;border:2px dashed #8ea4e0;background:#f2f6ff;animation:softpulse 2.4s ease infinite}
 .hidden-row .v{color:var(--blue-d)}
 .hidden-row.need{animation:pulse 1s ease infinite}
+.hidden-row.open{animation:none}
+@keyframes softpulse{50%{box-shadow:0 0 0 4px rgba(61,109,242,.25)}}
 .hidden-row.open{border-style:solid;border-color:#c9d6f5;cursor:default}
 .mag{width:18px;height:18px;vertical-align:-3px;margin-right:4px}
 .stampHint{position:absolute;top:18px;font-size:22px;font-weight:800;padding:6px 12px;border-radius:10px;
@@ -85,11 +87,7 @@ button{font-family:inherit;color:inherit}
 #hintL{left:16px;color:var(--red);border-color:var(--red)}
 #hintR{right:16px;color:var(--green);border-color:var(--green);transform:rotate(8deg)}
 #hintU{left:50%;top:auto;bottom:18px;transform:translateX(-50%);color:var(--violet);border-color:var(--violet)}
-#timerWrap{position:absolute;left:90px;top:468px;width:440px;display:flex;align-items:center;gap:10px}
-#timer{flex:1;height:8px;border-radius:99px;background:#dde4f2;overflow:hidden}
-#timerFill{height:100%;width:100%;background:var(--blue);border-radius:99px}
-#timerLbl{font-size:14px;color:var(--muted);white-space:nowrap}
-#tutorialTip,#banner{position:absolute;left:0;right:0;top:490px;text-align:center;font-size:17px;font-weight:800}
+#tutorialTip,#banner{position:absolute;left:0;right:0;top:474px;text-align:center;font-size:17px;font-weight:800}
 #tutorialTip{color:var(--blue-d)}
 #banner{color:var(--green)}
 
@@ -98,6 +96,8 @@ button{font-family:inherit;color:inherit}
   border-radius:16px;border:1px solid var(--line);padding:16px;display:flex;flex-direction:column;align-items:center}
 #bubble{position:relative;width:100%;background:#fffbe0;border:2px solid #e6c62f;border-radius:16px;padding:12px 14px;
   font-size:18px;line-height:1.45;min-height:128px}
+#bubble.pop{animation:pop .35s ease}
+@keyframes pop{0%{transform:scale(.92);opacity:.4}60%{transform:scale(1.03);opacity:1}100%{transform:scale(1)}}
 #bubble:after{content:"";position:absolute;left:50%;bottom:-12px;margin-left:-10px;border:10px solid transparent;
   border-top-color:#e6c62f;border-bottom:0}
 #bubble .tag,#bubble .radar{display:inline-block;font-size:14px;font-weight:700;border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
@@ -199,7 +199,6 @@ button{font-family:inherit;color:inherit}
       <div class="stampHint" id="hintU">수의계약</div>
       <div id="cardBody"></div>
     </div>
-    <div id="timerWrap"><div id="timer"><div id="timerFill"></div></div><span id="timerLbl">빨리 판정하면 +50</span></div>
     <div id="tutorialTip"></div>
     <div id="banner"></div>
   </div>
@@ -226,7 +225,7 @@ button{font-family:inherit;color:inherit}
         <circle cx="100" cy="88" r="7" fill="#1f2a44"/></g>
     </svg>
     <div id="botName">살펴봇</div>
-    <div id="botNote">AI 조수(가상 캐릭터) · 말은 참고용</div>
+    <div id="botNote">가상 AI 조수 · 대사는 미리 짠 시나리오</div>
   </div>
 
   <div id="controls">
@@ -244,11 +243,11 @@ button{font-family:inherit;color:inherit}
       <h1>살펴봇 공정심사실</h1>
       <p class="sub">AI는 근거를, 결정은 내가!</p>
       <p class="desc">당신은 가상의 ‘공정조달 심사실’에 새로 온 심사관입니다.<br>AI 조수 살펴봇이 근거를 짚어 주지만, 가끔 틀려요.<br>바뀌는 조달 규칙에 맞춰 기업 카드를 판정해 보세요. (3~4분)</p>
-      <p class="notice">등장 기업·인물·단서는 모두 가상이며, 살펴봇은 조달청의 실제 시스템이 아닙니다.</p>
+      <p class="notice">등장 기업·인물·단서는 모두 가상이며, 살펴봇은 조달청의 실제 시스템이 아닙니다.<br>살펴봇의 말과 실수는 미리 짜 둔 시나리오이고, 게임 중에 AI가 판단하지 않습니다.</p>
       <button class="primary" id="startSound" type="button">소리 켜고 시작</button>
       <button class="secondary" id="startMute" type="button">소리 없이 시작</button>
       <button class="secondary" id="titleHelp" type="button">도움말</button>
-      <div class="proto">프로토타입 v0.2 · 그래픽은 임시 · 마우스·키보드 지원(PC 권장)</div>
+      <div class="proto">프로토타입 v0.3 · 그래픽은 임시 · 마우스·키보드 지원(PC 권장)</div>
     </div>
   </div>
 
@@ -264,7 +263,7 @@ button{font-family:inherit;color:inherit}
 /* ---------- 출처 ---------- */
 var SRC = {
   woman: '조달청 보도자료(2025.9.16) — 적격심사 신인도 평가 등에서 여성·창업기업 우대',
-  deposit: '조달청 보도자료(2026.7.13 「‘유령기업·묻지마 투찰’ 퇴출」, 2026.7.23 「9개품목 입찰보증금 의무화」)',
+  deposit: '조달청 보도자료(2026.7.13 「‘유령기업·묻지마 투찰’ 퇴출」, 2026.7.23 「무분별입찰 뿌리뽑는다…9개품목 입찰보증금 의무화」)',
   probe: '조달청 보도자료(2026.9.10 「불공정행위에 엄정 대응, 조달기업은 더욱 두텁게 보호」)',
   innov: '조달청 혁신제품 지정 안내 — 지정 후 3년 수의계약, 보도자료(2025.10.31) — 최대 6년',
   excel: '조달청 보도자료(2026.7.29) — 우수조달물품 수의계약 기본 3년 + 연장 최대 3년',
@@ -305,8 +304,10 @@ var CO = {
   ssukssuk:{name:'쑥쑥종이', badges:[['일반','normal']], item:'복사용지',
            rows:[['사업장','공유오피스'],['직원','1명'],['연락','대표번호 연결 안 됨']],
            hidden:['같은 날 입찰','다른 이름으로 3건 동시 입찰']},
+  dandan1:{name:'단단헬멧', badges:[['일반','normal']], item:'헬멧',
+           rows:[['사업장','경북 ○○시 공장'],['직원','22명'],['입찰보증금','내지 않음']]},
   dandan: {name:'단단헬멧', badges:[['일반','normal'],['우려 품목','warn']], item:'헬멧',
-           rows:[['사업장','경북 ○○시 공장'],['직원','22명'],['입찰보증금','확인 안 됨']]},
+           rows:[['사업장','경북 ○○시 공장'],['직원','22명'],['입찰보증금','내지 않음']]},
   ttoryeot:{name:'또렷계측', badges:[['일반','normal'],['우려 품목','warn']], item:'오실로스코프',
            rows:[['사업장','경기 ○○시 연구동'],['직원','17명'],['입찰보증금','납부 완료']]},
   baeum:  {name:'배움교구', badges:[['일반','normal'],['우려 품목','warn']], item:'교육훈련장비',
@@ -364,16 +365,17 @@ var STAGES = [
       card('deunde', {ans:'R', bot:{row:2, dir:'R', ok:true, say:'여성기업 확인서가 있어요. 진행!'}, why:'의심 단서가 없고, 여성기업은 신인도 평가 우대 대상이에요.', src:SRC.woman}),
       card('malkkeum', {ans:'L', bot:{row:1, dir:'R', ok:false, habit:'skip', say:'서류는 깔끔해요. 바로 진행해요!'}, why:'서류는 멀쩡해도 현장이 비어 있고 간판도 없어요. 숨은 정보까지 확인해야 해요.', src:SRC.fake}),
       card('bareun', {ans:'R', bot:{row:2, dir:'R', ok:true, say:'실적 많고 깔끔해요. 진행!'}, why:'의심 단서가 없는 성실한 기업이에요.'}),
-      card('solsol', {ans:'R', bot:{row:2, dir:'R', ok:true, say:'연락도 잘 돼요. 진행!'}, why:'의심 단서가 없어요.'}),
+      card('dandan1', {ans:'R', bot:{row:1, dir:'R', ok:true, say:'공장도 있고 직원도 많아요. 진행!'},
+        why:'의심 단서가 없어요. 8월 3일 전에는 이 품목도 입찰보증금을 따로 내지 않았어요.'}),
       card('ssukssuk', {ans:'L', bot:{row:'h', dir:'L', ok:true, say:'점선 칸에 입찰 기록이 있어요. 한번 보세요.'}, why:'연락이 안 되고, 같은 날 다른 이름으로 3건 입찰했어요.', src:SRC.fake})
     ]},
   { id:2, name:'2단계 · 무분별 입찰 근절', date:'2026. 8. 3.', leftSub:'의심·보증금 미확인',
     cards:[
-      card('dandan', {ans:'L',
-        rule:{date:'2026. 8. 3.', key:'우려 품목 입찰보증금', label:'새 규칙', text:'<b>우려 품목</b>(9개): 입찰자 <b>모두</b> 보증금. 미확인이면 ←',
-          body:'<p>2026년 8월 3일부터 조달청이 공고한 <b>‘무분별입찰 우려 품목’</b>(헬멧, 오실로스코프, 교육훈련장비 등 9개)에 입찰하면 <b>모든 업체</b>가 <b>입찰보증금</b>을 내야 해요.</p><p>의심 판정이 아니라 <b>품목 조건</b>이에요. <span class="badge b-warn">우려 품목</span> 카드는 보증금 납부를 확인하세요.<br>납부 완료 → <b>심사 진행</b> · 확인 안 됨 → <b>← 확인 필요</b></p>', src:SRC.deposit},
-        bot:{row:1, dir:'R', ok:false, habit:'old', say:'지난달처럼 공장도 있고 직원도 많아요. 진행!'},
-        why:'8월 3일부터 우려 품목은 입찰자 모두 입찰보증금을 내야 해요. 보증금이 확인되지 않았으니 먼저 확인이 필요해요.', src:SRC.deposit}),
+      card('dandan', {ans:'L', repeat:'1단계에서 본 단단헬멧이에요. 카드 내용은 같은데, 무엇이 바뀌었을까요?',
+        rule:{date:'2026. 8. 3.', key:'우려 품목 입찰보증금', label:'새 규칙', text:'<b>우려 품목</b>(9개): 입찰자 <b>모두</b> 보증금. 안 냈거나 미확인이면 ←',
+          body:'<p>2026년 8월 3일부터 조달청이 공고한 <b>‘무분별입찰 우려 품목’</b> 9개에 입찰하면 <b>모든 업체</b>가 <b>입찰보증금</b>을 내야 해요.</p><p>의심 판정이 아니라 <b>품목 조건</b>이에요. <span class="badge b-warn">우려 품목</span> 카드는 보증금 납부를 확인하세요.<br>납부 완료 → <b>심사 진행</b> · 내지 않음·확인 안 됨 → <b>← 확인 필요</b></p><p style="font-size:15px;color:#56617a">9개 품목: 액체크로마토그래피, 질량분석기, 약품분배기 및 포장기, 반도체검사기, 오실로스코프, 교육훈련장비, 진공증착기, 헬멧, 적외선분광기(2026.7.23 보도자료). 게임에는 이 중 헬멧·오실로스코프·교육훈련장비만 나와요.</p>', src:SRC.deposit},
+        bot:{row:1, dir:'R', ok:false, habit:'old', say:'지난달에 통과한 그 회사예요. 이번에도 진행!'},
+        why:'지난달과 카드 내용은 같지만, 8월 3일부터 헬멧은 우려 품목이라 입찰자 모두 입찰보증금을 내야 해요. 보증금을 내지 않았으니 확인이 필요해요. 같은 카드라도 규칙이 바뀌면 판정이 바뀌어요.', src:SRC.deposit}),
       card('ttoryeot', {ans:'R', bot:{row:-1, dir:'L', ok:false, habit:'badge', say:'우려 품목이에요! 의심 업체예요. 멈춰요!'},
         why:'우려 품목은 ‘의심 업체’라는 뜻이 아니라 입찰 조건이에요. 보증금을 냈으니 정상적으로 심사를 진행해요.', src:SRC.deposit}),
       card('doran', {ans:'R', bot:{row:-1, dir:'R', ok:true, say:'우려 품목 표시가 없어요. 진행!'}, why:'우려 품목이 아니고 의심 단서도 없어요.'}),
@@ -422,7 +424,6 @@ var state = { scale:1, si:0, ci:0, score:0, log:[], revealed:false, busy:true, s
   t0:0, firstScoredAt:null, firstCorrectAt:null, sprout1:null, drag:null, rules:[], card:null,
   modalCb:null, modalAt:0, modalKind:'', lastKeyAt:-1e9, helpPausedAt:null, resultShown:false, holdMs:0 };
 var SHOW_TESTLOG = !/[?&]notest/.test(location.search);
-var TIMER_MS = 6000;
 
 var $ = function(s){ return document.querySelector(s); };
 var stageEl = $('#stage');
@@ -453,6 +454,7 @@ function tone(freq, dur, type, vol, when){
   g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.15, t + 0.01);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur + 0.03);
+  o.onended = function(){ o.disconnect(); g.disconnect(); };
 }
 function noise(dur, vol, freq){
   if (!soundOn || !ac) return;
@@ -461,6 +463,7 @@ function noise(dur, vol, freq){
   var src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
   src.buffer = buf; f.type = 'lowpass'; f.frequency.value = freq || 800; g.gain.value = vol || 0.2;
   src.connect(f); f.connect(g); g.connect(ac.destination); src.start();
+  src.onended = function(){ src.disconnect(); f.disconnect(); g.disconnect(); };
 }
 var SFX = {
   ok: function(){ tone(660,.12,'triangle',.16); tone(990,.16,'triangle',.14,.09); },
@@ -494,7 +497,9 @@ function mood(m){
 }
 function botCopy(){ return $('#bot').innerHTML; }
 function say(html, radar){
-  $('#bubble').innerHTML = '<span class="tag">참고용</span>' + (radar ? '<span class="radar">데이터 레이더</span>' : '') + html;
+  var b = $('#bubble');
+  b.innerHTML = '<span class="tag">참고용</span>' + (radar ? '<span class="radar">데이터 레이더</span>' : '') + html;
+  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); // 말이 바뀔 때 시선을 끄는 짧은 움직임
 }
 $('#titleBot').innerHTML = botCopy();
 
@@ -562,7 +567,6 @@ function renderCard(){
   $('#btnL').innerHTML = '← 확인 필요<small>' + st.leftSub + '</small>';
   $('#controls').className = st.up ? 'upmode' : '';
   $('#tutorialTip').textContent = c.tip || '';
-  $('#timerWrap').style.visibility = st.tutorial ? 'hidden' : 'visible';
   var cardEl = $('#card'); cardEl.classList.remove('shake'); cardEl.style.transition = 'none'; cardEl.style.opacity = '0';
   cardEl.style.transform = 'translateY(30px) scale(.96)';
   requestAnimationFrame(function(){ requestAnimationFrame(function(){
@@ -582,14 +586,6 @@ function reveal(){
   SFX.reveal();
 }
 
-function setTimerBar(fraction, ms){
-  var f = $('#timerFill'); f.style.transition = 'none'; f.style.width = (fraction * 100) + '%';
-  if (ms > 0) requestAnimationFrame(function(){ requestAnimationFrame(function(){ f.style.transition = 'width ' + ms + 'ms linear'; f.style.width = '0%'; }); });
-}
-function stopTimer(){
-  var f = $('#timerFill'); var w = getComputedStyle(f).width; f.style.transition = 'none'; f.style.width = w;
-}
-
 function showCard(){
   var st = curStage(), c = st.cards[state.ci];
   state.card = c; state.revealed = false; state.busy = true;
@@ -599,12 +595,12 @@ function showCard(){
     renderCard();
     var banner = '';
     if (c.sprout && st.id === 3) banner = '1단계에서 만난 새싹로봇연구소가 돌아왔어요!' + (state.sprout1 === 'L' ? ' (그때 확인 필요로 보냈던 기업)' : '');
+    if (c.repeat) banner = c.repeat;
     $('#banner').textContent = banner;
     mood(c.bot.dir === 'L' ? 'alert' : 'normal');
     say(c.bot.say, c.radar);
     state.shownAt = performance.now();
     if (!st.tutorial && state.firstScoredAt === null) state.firstScoredAt = state.shownAt;
-    if (!st.tutorial) setTimerBar(1, TIMER_MS);
   };
   if (c.rule) {
     state.rules.push({date:c.rule.date, text:c.rule.text, key:c.rule.key});
@@ -647,12 +643,14 @@ function decide(dir){
     shakeCard(); SFX.bad(); mood('oops'); say('앗, 반대쪽이에요. 다시 해 볼까요? ' + c.tip);
     return;
   }
-  state.busy = true; stopTimer();
+  state.busy = true;
   var now = performance.now(), dt = now - state.shownAt;
-  var gained = 0, corrected = false;
+  var gained = 0, corrected = false, checked = false;
   if (!st.tutorial) {
     if (correct) {
-      gained = 100 + (dt < TIMER_MS ? 50 : 0);
+      gained = 100;
+      // 빠르기가 아니라 '근거를 확인하고 맞힌 것'에 보너스를 준다(게임 메시지와 일치)
+      if (c.hidden && state.revealed) { gained += 50; checked = true; }
       if (!c.bot.ok) { gained += 50; corrected = true; }
       if (state.firstCorrectAt === null) state.firstCorrectAt = now;
     }
@@ -673,7 +671,10 @@ function decide(dir){
         var hb = HABITS[c.bot.habit];
         SFX.combo(); mood('oops'); say('앗, 제 버릇 <b>‘' + hb[0] + '’</b>이 나왔네요. 역시 결정은 심사관님!');
         toast('살펴봇의 버릇을 잡았어요! +' + gained, 'good');
-      } else { SFX.ok(); mood('happy'); say(st.tutorial ? '좋아요! ' + c.why : '정답이에요!'); toast(st.tutorial ? '좋아요!' : '정답 +' + gained, 'good'); }
+      } else {
+        SFX.ok(); mood('happy'); say(st.tutorial ? '좋아요! ' + c.why : '정답이에요!');
+        toast(st.tutorial ? '좋아요!' : (checked ? '근거 확인하고 정답! +' : '정답 +') + gained, 'good');
+      }
       setTimeout(next, st.tutorial ? 1400 : (corrected ? 1500 : 650)); // 버릇을 잡았을 때는 살펴봇 말을 읽을 시간
     } else {
       SFX.bad(); mood('oops');
@@ -805,22 +806,25 @@ function showResult(){
   if (followed >= 3) type = ['AI 짝꿍형', '살펴봇을 많이 믿었어요. 다음엔 근거를 한 번 더 눌러 봐요. AI는 참고, 판단은 사람!'];
   else if (sprouts.length && sproutOk === sprouts.length && acc >= 0.8) type = ['기회 발굴형', '실적이 적은 새싹 기업에도 공정하게 기회를 줬어요. 그 기업이 혁신제품이 되어 돌아왔죠.'];
   else if (hid.length && rev / hid.length >= 0.7 && acc >= 0.8) type = ['꼼꼼 검증형', '숨은 정보까지 확인하고 판단했어요. 근거를 보는 눈이 정확해요.'];
-  else if (avg < 3000 && acc >= 0.7) type = ['번개 판정형', '빠르고 정확해요. 바뀐 규칙에도 금방 적응했어요.'];
+  else if (acc >= 0.8) type = ['균형 심사형', '의심할 때와 기회를 줄 때를 잘 가렸어요. 바뀐 규칙에도 잘 적응했어요.'];
   else type = ['새내기 심사관', '규칙이 바뀌면 정답도 바뀌어요. 한 판 더 하면 금방 늘어요!'];
+  state.lastResult = {type:type, acc:pct(me, n), botAcc:pct(bot, n), fixed:fixed, wrongBot:wrongBot, rev:rev, hid:hid.length, caught:caughtList, score:state.score};
 
   function bar(label, v, color){ return '<div class="bar"><span class="lbl">' + label + '</span><span class="trk"><span class="fill" style="width:' + v + '%;background:' + color + '"></span></span><b>' + v + '%</b></div>'; }
-  var msg = me >= bot
-    ? 'AI 혼자 판정했다면 ' + bot + '/' + n + ', 당신이 함께하니 ' + me + '/' + n + '. <b>AI는 근거를, 결정은 사람이.</b>'
-    : '이번엔 살펴봇 혼자가 더 정확했어요(' + bot + '/' + n + ' vs ' + me + '/' + n + '). 숨은 정보를 열어 보면 역전할 수 있어요!';
+  // 살펴봇의 판단은 미리 짜 둔 시나리오이므로 '실제 AI 성능'처럼 보이지 않게 표기한다
+  var msg = (me >= bot
+    ? '살펴봇 말대로만 했다면 ' + bot + '/' + n + ', 당신의 판정은 ' + me + '/' + n + '. <b>AI는 근거를, 결정은 사람이.</b>'
+    : '이번엔 살펴봇 말대로 한 쪽이 더 많이 맞았어요(' + bot + '/' + n + ' vs ' + me + '/' + n + '). 숨은 정보를 열어 보면 역전할 수 있어요!') +
+    ' <span style="font-size:14px;color:#56617a">(게임 속 시나리오 기준, 실제 AI 성능 비교가 아니에요)</span>';
   var html = '<h2>심사 결과</h2>' +
-    '<div class="bars">' + bar('살펴봇 혼자', pct(bot, n), '#9fb2e6') + bar('나 + 살펴봇', pct(me, n), '#3d6df2') + '</div>' +
+    '<div class="bars">' + bar('살펴봇 말대로', pct(bot, n), '#9fb2e6') + bar('나의 판정', pct(me, n), '#3d6df2') + '</div>' +
     '<p style="font-size:16px;margin-top:2px">' + msg + '</p>' +
-    '<div class="typecard"><svg viewBox="0 0 200 220" width="80" height="88" aria-hidden="true">' + botCopy() + '</svg>' +
+    '<div class="typecard"><svg viewBox="0 0 200 220" width="70" height="77" aria-hidden="true">' + botCopy() + '</svg>' +
     '<div><div class="tn">' + type[0] + '</div><div class="tm">' + type[1] + '</div></div></div>' +
     '<div class="stats"><div class="stat"><div class="n">' + state.score + '</div><div class="l">점수</div></div>' +
+    '<div class="stat"><div class="n">' + pct(me, n) + '%</div><div class="l">정확도</div></div>' +
     '<div class="stat"><div class="n">' + fixed + '/' + wrongBot + '</div><div class="l">버릇 잡기</div></div>' +
-    '<div class="stat"><div class="n">' + rev + '/' + hid.length + '</div><div class="l">숨은 정보 확인</div></div>' +
-    '<div class="stat"><div class="n">' + (avg / 1000).toFixed(1) + '초</div><div class="l">카드당 판정</div></div></div>' +
+    '<div class="stat"><div class="n">' + rev + '/' + hid.length + '</div><div class="l">숨은 정보 확인</div></div></div>' +
     '<div class="habits">잡아낸 살펴봇의 버릇: <b>' + caughtList + '</b>' + (missedList ? '<br>다음엔 이 버릇을 조심해요: ' + missedList : '') + '</div>' +
     '<p style="font-size:15px;margin-top:8px">예고: 2027년 1월 1일부터 최근 1년간 2회 이상 입찰을 포기한 업체도 입찰보증금 대상이 될 예정이에요.<br>' +
     '2025년 공공조달 238.5조원 중 중소기업이 149.5조원(62.7%). 공정한 심사는 모두의 일이에요. 불공정 행위는 <b>조달기업 불공정행위 신고센터</b>로.</p>' +
@@ -830,11 +834,84 @@ function showResult(){
     var firstSec = (state.firstCorrectAt && state.firstScoredAt) ? ((state.firstCorrectAt - state.firstScoredAt) / 1000).toFixed(1) + '초' : '-';
     var total = Math.round((performance.now() - state.t0) / 1000);
     html += '<div class="testlog"><b>테스트 기록</b> · 첫 정답까지 ' + firstSec + ' · 총 ' + Math.floor(total / 60) + '분 ' + (total % 60) + '초 · ' + stageAcc +
-      ' · 살펴봇 오판 따라감 ' + followed + '회</div>';
+      ' · 살펴봇 오판 따라감 ' + followed + '회 · 카드당 ' + (avg / 1000).toFixed(1) + '초</div>';
   }
-  html += '<button class="primary" type="button">처음으로</button>';
+  html += '<button class="primary" type="button">처음으로</button><button class="secondary" id="saveCardBtn" type="button">결과 카드 저장(PNG)</button>';
   state.resultShown = true;
   openModal(html, resetGame, 'result');
+  onClick($('#saveCardBtn'), saveCard);
+}
+
+/* ---------- 결과 카드 PNG (외부 이미지 없이 Canvas로만 그림) ---------- */
+var FONT = '"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+function rrect(ctx, x, y, w, h, r){
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function wrapText(ctx, text, x, y, maxW, lh){
+  var line = '', lines = [];
+  for (var i = 0; i < text.length; i++) {
+    var t = line + text[i];
+    if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = text[i]; } else line = t;
+  }
+  if (line) lines.push(line);
+  lines.forEach(function(l, k){ ctx.fillText(l, x, y + k * lh); });
+  return y + lines.length * lh;
+}
+function drawBot(ctx, cx, cy, s){
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s);
+  ctx.fillStyle = '#5b7cfa'; rrect(ctx, -45, 64, 90, 72, 24); ctx.fill();
+  ctx.fillStyle = '#dfe6ff'; rrect(ctx, -28, 82, 56, 30, 10); ctx.fill();
+  ctx.fillStyle = '#3d56c9'; rrect(ctx, -8, 40, 16, 30, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 0, 52, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+  ctx.lineWidth = 12; ctx.strokeStyle = '#3d56c9'; ctx.stroke();
+  ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.strokeStyle = '#1f2a44';
+  ctx.beginPath(); ctx.moveTo(-27, 1); ctx.quadraticCurveTo(-18, -10, -9, 1); ctx.moveTo(9, 1); ctx.quadraticCurveTo(18, -10, 27, 1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-20, 16); ctx.quadraticCurveTo(0, 38, 20, 16); ctx.closePath(); ctx.fillStyle = '#1f2a44'; ctx.fill();
+  ctx.restore();
+}
+function renderCardCanvas(){
+  var r = state.lastResult, c = document.createElement('canvas');
+  c.width = 1080; c.height = 1350;
+  var ctx = c.getContext('2d');
+  var g = ctx.createLinearGradient(0, 0, 1080, 1350);
+  g.addColorStop(0, '#eaf0ff'); g.addColorStop(.55, '#f7f9ff'); g.addColorStop(1, '#e9f7f0');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 1080, 1350);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#1f2a44'; ctx.font = 'bold 72px ' + FONT; ctx.fillText('살펴봇 공정심사실', 540, 140);
+  ctx.fillStyle = '#2848b0'; ctx.font = 'bold 42px ' + FONT; ctx.fillText('AI는 근거를, 결정은 내가!', 540, 205);
+  drawBot(ctx, 540, 340, 1.5);
+  ctx.fillStyle = '#ebe5ff'; rrect(ctx, 90, 560, 900, 230, 36); ctx.fill();
+  ctx.fillStyle = '#5a3cc9'; ctx.font = 'bold 76px ' + FONT; ctx.fillText(r.type[0], 540, 660);
+  ctx.fillStyle = '#1f2a44'; ctx.font = '34px ' + FONT; wrapText(ctx, r.type[1], 540, 720, 820, 46);
+  var boxes = [[r.acc + '%', '정확도'], [r.fixed + '/' + r.wrongBot, '버릇 잡기'], [r.rev + '/' + r.hid, '숨은 정보 확인']];
+  boxes.forEach(function(b, i){
+    var x = 90 + i * 310;
+    ctx.fillStyle = '#ffffff'; rrect(ctx, x, 830, 280, 170, 28); ctx.fill();
+    ctx.fillStyle = '#1f2a44'; ctx.font = 'bold 64px ' + FONT; ctx.fillText(b[0], x + 140, 920);
+    ctx.fillStyle = '#56617a'; ctx.font = '30px ' + FONT; ctx.fillText(b[1], x + 140, 970);
+  });
+  ctx.fillStyle = '#1f2a44'; ctx.font = '32px ' + FONT;
+  wrapText(ctx, '잡아낸 살펴봇의 버릇: ' + r.caught, 540, 1070, 900, 44);
+  ctx.fillStyle = '#2848b0'; ctx.font = 'bold 44px ' + FONT; ctx.fillText('AI는 근거를, 결정은 사람이.', 540, 1210);
+  ctx.fillStyle = '#56617a'; ctx.font = '26px ' + FONT;
+  ctx.fillText('게임 속 기업·단서와 살펴봇의 대사는 모두 가상입니다.', 540, 1275);
+  return c;
+}
+// 자동 다운로드가 막힌 환경(웹 뷰어 등)도 있으므로, 이미지를 화면에 보여 주고 직접 저장하게 한다.
+function saveCard(){
+  if (!state.lastResult) return;
+  var url;
+  try { url = renderCardCanvas().toDataURL('image/png'); } catch(e){ toast('이 브라우저에서는 이미지를 만들 수 없어요', 'bad'); return; }
+  var box = $('#modalBox'), prev = $('#cardPreview');
+  if (prev) prev.remove();
+  var d = document.createElement('div'); d.id = 'cardPreview';
+  d.style.cssText = 'margin-top:14px;text-align:center';
+  d.innerHTML = '<img src="' + url + '" alt="심사 결과 카드" style="width:270px;border-radius:12px;box-shadow:0 4px 16px rgba(31,42,68,.18)">' +
+    '<p style="font-size:15px">이미지를 마우스 오른쪽 버튼(휴대폰은 길게 누르기)으로 저장하세요.' +
+    // 파일 링크 저장은 index.html을 직접 연 경우(file://)에만 동작하므로 그때만 보여 준다
+    (location.protocol === 'file:' ? ' <a href="' + url + '" download="살펴봇_심사결과.png">파일로 저장</a>' : '') + '</p>';
+  box.appendChild(d); box.scrollTop = box.scrollHeight;
 }
 
 function resetGame(){
@@ -850,21 +927,16 @@ function resetGame(){
 function showHelp(){
   if ($('#modal').classList.contains('on')) return;
   if (state.started && state.busy) return; // 판정 직후 넘어가는 중에는 열지 않음
-  var pausing = state.started && state.card && !state.busy && !curStage().tutorial;
-  if (pausing) { stopTimer(); state.helpPausedAt = performance.now(); }
+  var pausing = state.started && state.card && !state.busy;
+  if (pausing) state.helpPausedAt = performance.now(); // 도움말을 본 시간은 판정 시간에서 뺀다
   state.busy = true;
-  openModal('<h2>도움말</h2><p><b>조작</b>: 카드를 왼쪽·오른쪽(3단계는 위쪽)으로 밀거나, 아래 큰 버튼 또는 방향키를 쓰세요. 점선 칸은 눌러서(또는 스페이스바) 숨은 정보를 확인해요.</p>' +
-    '<p><b>살펴봇</b>은 조달청의 실제 시스템이 아닌 <b>가상 캐릭터</b>예요. 조달청이 ‘AI 기술평가’ 실증(2026.8)에서 밝힌 원칙, 곧 AI 분석자료는 ‘평가 참고용 보조자료’로 표시하고 최종 판단은 평가위원이 한다는 원칙을 빌려 왔어요.</p>' +
+  openModal('<h2>도움말</h2><p><b>조작</b>: 카드를 왼쪽·오른쪽(3단계는 위쪽)으로 밀거나, 아래 큰 버튼 또는 방향키를 쓰세요. 점선 칸은 눌러서(또는 스페이스바) 숨은 정보를 확인해요. 숨은 정보를 확인하고 맞히면 보너스 점수가 있어요.</p>' +
+    '<p><b>살펴봇</b>은 조달청의 실제 시스템이 아닌 <b>가상 캐릭터</b>예요. 살펴봇의 말과 실수는 교육을 위해 <b>미리 짜 둔 시나리오</b>이고, 게임 중에 생성형 AI가 판단하지 않아요. 조달청이 ‘AI 기술평가’ 실증(2026.8)에서 밝힌 원칙, 곧 AI 분석자료는 ‘평가 참고용 보조자료’로 표시하고 최종 판단은 평가위원이 한다는 원칙을 빌려 왔어요.</p>' +
     '<p>이 게임은 실제 조달 규칙을 바탕으로 <b>단순화</b>했어요. 기업 이름과 의심 단서는 모두 가상이고, ‘확인 필요’는 게임 속 행동이에요. 실제 심사는 여러 평가와 조사를 거쳐 이뤄져요.</p>' +
     '<button class="primary" type="button">닫기</button>', function(){
       if (!state.started) { state.busy = true; return; }
       state.busy = false;
-      if (state.helpPausedAt !== null) {
-        var paused = performance.now() - state.helpPausedAt; state.helpPausedAt = null;
-        state.shownAt += paused;
-        var left = Math.max(0, TIMER_MS - (performance.now() - state.shownAt));
-        setTimerBar(left / TIMER_MS, left);
-      }
+      if (state.helpPausedAt !== null) { state.shownAt += performance.now() - state.helpPausedAt; state.helpPausedAt = null; }
     }, 'help');
 }
 onClick($('#helpBtn'), showHelp);
