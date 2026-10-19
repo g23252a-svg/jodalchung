@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>살펴봇 공정심사실 (프로토타입 v0.3)</title>
+<title>살펴봇 공정심사실 (프로토타입 v0.4)</title>
 <style>
 :root{
   --bg:#eef3fb; --panel:#ffffff; --ink:#1f2a44; --muted:#56617a; --line:#d9e1ef;
@@ -12,11 +12,12 @@
   --red:#c2362f; --red-soft:#fde3e1;
   --amber:#6e4700; --amber-soft:#ffeeb8; --amber-line:#d9a300;
   --violet:#5a3cc9; --violet-soft:#ebe5ff;
+  --g-tax:#d9473f; --g-chance:#c07a00; --g-delay:#5b6b8f;
   --hl:#fff09a;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:#c9d5ea;
-  font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:var(--ink);
+  font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:var(--ink);word-break:keep-all;overflow-wrap:anywhere;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 button{font-family:inherit;color:inherit}
 #wrap{position:fixed;inset:0;overflow:hidden;touch-action:none;overscroll-behavior:none}
@@ -25,42 +26,59 @@ button{font-family:inherit;color:inherit}
 
 /* 상단 바 */
 #top{position:absolute;left:0;top:0;right:0;height:64px;display:flex;align-items:center;
-  padding:0 24px;gap:16px;background:#fff;border-bottom:1px solid var(--line)}
-#stageName{font-size:22px;font-weight:700;min-width:330px}
+  padding:0 24px;gap:14px;background:#fff;border-bottom:1px solid var(--line)}
+#stageName{font-size:21px;font-weight:700;min-width:300px}
 #calendar{margin:0 auto;display:flex;align-items:center;gap:10px;font-size:22px;font-weight:700;
   background:var(--blue-soft);color:var(--blue-d);padding:6px 18px;border-radius:999px}
 #calendar svg{width:22px;height:22px}
 #calendar.flip{animation:flip .6s ease}
 @keyframes flip{0%{transform:rotateX(0)}50%{transform:rotateX(90deg)}100%{transform:rotateX(0)}}
-#meta{display:flex;align-items:center;gap:14px;min-width:330px;justify-content:flex-end;font-size:18px}
+#meta{display:flex;align-items:center;gap:12px;min-width:360px;justify-content:flex-end;font-size:17px}
+#tokens{display:flex;align-items:center;gap:4px;font-weight:700;color:var(--blue-d)}
+#tokens .tk{width:16px;height:16px;border-radius:50%;background:var(--blue);display:inline-block}
+#tokens .tk.used{background:#cfd8ea}
+#tokens.flash{animation:pulse .8s ease 2}
 #progress{color:var(--muted)}
 #score{font-weight:700}
-.iconbtn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font-size:16px;cursor:pointer}
+.iconbtn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font-size:15px;cursor:pointer}
 
-/* 좌측 규칙판 */
-#rules{position:absolute;left:24px;top:84px;width:280px;height:510px;background:var(--panel);
-  border-radius:16px;border:1px solid var(--line);padding:16px 12px 12px 16px;display:flex;flex-direction:column}
-#rules h3{margin:0 0 10px;font-size:18px;flex:none}
+/* 좌측: 동네 계기판 + 규칙판 */
+#town{position:absolute;left:24px;top:84px;width:280px;height:176px;background:var(--panel);
+  border-radius:16px;border:1px solid var(--line);padding:12px 14px}
+#town h3,#rules h3{margin:0 0 8px;font-size:17px}
+.gauge{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:15px}
+.gauge .gl{width:66px;color:var(--muted);font-weight:700}
+.gauge .gt{flex:1;height:14px;background:#e7ecf5;border-radius:99px;overflow:hidden}
+.gauge .gf{display:block;height:100%;width:0;border-radius:99px;transition:width .5s ease}
+.gauge[data-g="tax"] .gf{background:var(--g-tax)}
+.gauge[data-g="chance"] .gf{background:var(--g-chance)}
+.gauge[data-g="delay"] .gf{background:var(--g-delay)}
+.gauge .gn{width:18px;text-align:right;font-variant-numeric:tabular-nums}
+.gauge.bump .gt{animation:pulse .8s ease 2}
+#town .gnote{font-size:13px;color:var(--muted);margin:6px 0 0;line-height:1.35}
+#rules{position:absolute;left:24px;top:270px;width:280px;height:324px;background:var(--panel);
+  border-radius:16px;border:1px solid var(--line);padding:12px 10px 10px 14px;display:flex;flex-direction:column}
+#rules h3{flex:none}
 #ruleList{flex:1;overflow-y:auto;padding-right:4px}
-.rule{border-radius:12px;padding:7px 10px;margin-bottom:6px;background:#f5f7fc;font-size:16px;line-height:1.4}
-.rule .d{display:inline-block;font-size:14px;font-weight:700;color:var(--blue-d);background:var(--blue-soft);
+.rule{border-radius:12px;padding:6px 9px;margin-bottom:6px;background:#f5f7fc;font-size:15px;line-height:1.38}
+.rule .d{display:inline-block;font-size:13px;font-weight:700;color:var(--blue-d);background:var(--blue-soft);
   border-radius:6px;padding:0 6px;margin-right:4px}
 .rule.new{background:var(--amber-soft);animation:pulse 1.2s ease 3}
 @keyframes pulse{50%{box-shadow:0 0 0 4px rgba(217,163,0,.4)}}
 
 /* 가운데 카드 */
 #cardArea{position:absolute;left:330px;top:84px;width:620px;height:520px;z-index:5}
-#card{position:absolute;left:90px;top:6px;width:440px;height:452px;background:#fff;border-radius:22px;
-  border:2px solid var(--line);box-shadow:0 8px 24px rgba(31,42,68,.12);padding:20px 24px;
+#card{position:absolute;left:90px;top:4px;width:440px;height:466px;background:#fff;border-radius:22px;
+  border:2px solid var(--line);box-shadow:0 8px 24px rgba(31,42,68,.12);padding:18px 22px;
   touch-action:none;cursor:grab;transition:transform .28s ease, opacity .28s ease}
 #card.dragging{transition:none;cursor:grabbing;z-index:30}
 #card.shake{animation:shake .4s}
 @keyframes shake{20%,60%{transform:translateX(-12px)}40%,80%{transform:translateX(12px)}}
 .ctop{display:flex;justify-content:space-between;align-items:baseline}
-.cname{font-size:28px;font-weight:800;margin:0 0 8px}
-.virtual{font-size:14px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
-.badges{display:flex;gap:6px;flex-wrap:wrap;min-height:32px;border-radius:10px;padding:2px}
-.badge{font-size:16px;font-weight:700;border-radius:8px;padding:4px 9px}
+.cname{font-size:27px;font-weight:800;margin:0 0 6px}
+.virtual{font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.badges{display:flex;gap:6px;flex-wrap:wrap;min-height:30px;border-radius:10px;padding:2px}
+.badge{font-size:15px;font-weight:700;border-radius:8px;padding:3px 9px}
 .b-normal{background:#eef1f7;color:#3f4a66}
 .b-start{background:var(--green-soft);color:var(--green)}
 .b-women{background:#ffe6f1;color:#9e2a5d}
@@ -68,26 +86,26 @@ button{font-family:inherit;color:inherit}
 .b-flag{background:var(--red-soft);color:var(--red);box-shadow:inset 0 0 0 2px #e79a95}
 .b-innov{background:var(--violet-soft);color:var(--violet)}
 .b-excel{background:var(--blue-soft);color:var(--blue-d)}
-.item{font-size:18px;color:var(--muted);margin:10px 0 12px}
+.item{font-size:17px;color:var(--muted);margin:8px 0 10px}
 .item b{color:var(--ink)}
-.row{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:12px;
-  background:#f6f8fc;margin-bottom:8px;font-size:18px;line-height:1.35}
+.row{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:12px;
+  background:#f6f8fc;margin-bottom:7px;font-size:17px;line-height:1.3}
 .row .k{color:var(--muted);flex:none}
 .row .v{font-weight:700;text-align:right}
 .hl{background:var(--hl)!important;box-shadow:0 0 0 2px #e6c62f inset}
-.hidden-row{cursor:pointer;border:2px dashed #8ea4e0;background:#f2f6ff;animation:softpulse 2.4s ease infinite}
-.hidden-row .v{color:var(--blue-d)}
-.hidden-row.need{animation:pulse 1s ease infinite}
-.hidden-row.open{animation:none}
-@keyframes softpulse{50%{box-shadow:0 0 0 4px rgba(61,109,242,.25)}}
-.hidden-row.open{border-style:solid;border-color:#c9d6f5;cursor:default}
-.mag{width:18px;height:18px;vertical-align:-3px;margin-right:4px}
+.slot{cursor:pointer;border:2px dashed #8ea4e0;background:#f2f6ff;animation:softpulse 2.4s ease infinite}
+.slot .v{color:var(--blue-d);font-weight:700}
+.slot.need{animation:pulse 1s ease infinite}
+.slot.open{border-style:solid;border-color:#c9d6f5;cursor:default;animation:none}
+.slot.locked{opacity:.6;cursor:not-allowed;animation:none}
+@keyframes softpulse{50%{box-shadow:0 0 0 4px rgba(61,109,242,.22)}}
+.mag{width:17px;height:17px;vertical-align:-3px;margin-right:4px}
 .stampHint{position:absolute;top:18px;font-size:22px;font-weight:800;padding:6px 12px;border-radius:10px;
   border:3px solid;opacity:0;pointer-events:none;transform:rotate(-8deg);background:rgba(255,255,255,.85)}
 #hintL{left:16px;color:var(--red);border-color:var(--red)}
 #hintR{right:16px;color:var(--green);border-color:var(--green);transform:rotate(8deg)}
 #hintU{left:50%;top:auto;bottom:18px;transform:translateX(-50%);color:var(--violet);border-color:var(--violet)}
-#tutorialTip,#banner{position:absolute;left:0;right:0;top:474px;text-align:center;font-size:17px;font-weight:800}
+#tutorialTip,#banner{position:absolute;left:0;right:0;top:482px;text-align:center;font-size:16px;font-weight:800}
 #tutorialTip{color:var(--blue-d)}
 #banner{color:var(--green)}
 
@@ -100,12 +118,13 @@ button{font-family:inherit;color:inherit}
 @keyframes pop{0%{transform:scale(.92);opacity:.4}60%{transform:scale(1.03);opacity:1}100%{transform:scale(1)}}
 #bubble:after{content:"";position:absolute;left:50%;bottom:-12px;margin-left:-10px;border:10px solid transparent;
   border-top-color:#e6c62f;border-bottom:0}
-#bubble .tag,#bubble .radar{display:inline-block;font-size:14px;font-weight:700;border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
+#bubble .tag,#bubble .radar{display:inline-block;font-size:13px;font-weight:700;border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
 #bubble .tag{background:#e6c62f;color:#3d3100}
 #bubble .radar{background:var(--violet-soft);color:var(--violet)}
 #bot{width:190px;height:210px;margin-top:22px}
+#bot.away{opacity:.35}
 #botName{font-weight:800;font-size:18px;margin-top:2px}
-#botNote{font-size:14px;color:var(--muted);text-align:center;margin-top:4px}
+#botNote{font-size:13px;color:var(--muted);text-align:center;margin-top:4px}
 
 /* 하단 버튼 */
 #controls{position:absolute;left:0;right:0;top:612px;height:90px}
@@ -120,8 +139,8 @@ button{font-family:inherit;color:inherit}
 .upmode #btnR{left:754px;width:196px}
 .upmode #btnU{display:block}
 
-/* 토스트: 카드 아래쪽 */
-#toast{position:absolute;left:640px;top:566px;transform:translate(-50%,8px);background:var(--ink);color:#fff;
+/* 토스트 */
+#toast{position:absolute;left:640px;top:572px;transform:translate(-50%,8px);background:var(--ink);color:#fff;
   padding:9px 18px;border-radius:999px;font-size:17px;font-weight:700;opacity:0;transition:all .2s;pointer-events:none;
   white-space:nowrap;z-index:20}
 #toast.show{opacity:1;transform:translate(-50%,0)}
@@ -132,51 +151,56 @@ button{font-family:inherit;color:inherit}
 .overlay{position:absolute;inset:0;background:rgba(31,42,68,.45);display:none;align-items:center;justify-content:center;z-index:50}
 .overlay.on{display:flex}
 .box{width:720px;max-height:700px;overflow:auto;background:#fff;border-radius:22px;padding:20px 30px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
-.box h2{margin:0 0 10px;font-size:26px}
-.box p{font-size:18px;line-height:1.55;margin:8px 0}
-.box .src{font-size:14px;color:var(--muted);margin-top:10px}
+.box h2{margin:0 0 10px;font-size:25px}
+.box p{font-size:17px;line-height:1.55;margin:7px 0}
+.box .src{font-size:13px;color:var(--muted);margin-top:10px}
 .box .ans{display:inline-block;font-weight:800;border-radius:10px;padding:4px 10px;margin:4px 0;background:#eef1f7}
 .box .newrule{display:inline-block;font-size:15px;font-weight:800;color:var(--amber);background:var(--amber-soft);
   border-radius:8px;padding:3px 10px;margin-bottom:8px}
-.box .habit{background:var(--violet-soft);border-radius:12px;padding:10px 14px;font-size:17px;margin-top:8px}
-.box .peek{background:#f2f6ff;border:2px solid #c9d6f5;border-radius:12px;padding:8px 12px;font-size:17px;margin-top:8px}
-.primary{margin-top:16px;border:0;background:var(--blue);color:#fff;font-size:20px;font-weight:800;border-radius:14px;
-  padding:14px 28px;cursor:pointer}
-.secondary{margin-top:16px;margin-left:8px;border:1px solid var(--line);background:#fff;font-size:18px;font-weight:700;
-  border-radius:14px;padding:13px 22px;cursor:pointer}
+.box .habit{background:var(--violet-soft);border-radius:12px;padding:9px 14px;font-size:16px;margin-top:8px}
+.box .peek{background:#f2f6ff;border:2px solid #c9d6f5;border-radius:12px;padding:8px 12px;font-size:16px;margin-top:8px}
+.box .plain{background:var(--green-soft);border-radius:12px;padding:8px 12px;font-size:16px;line-height:1.5}
+.box .plain b{color:var(--green)}
+.news{display:flex;gap:10px;align-items:flex-start;border-radius:12px;padding:9px 12px;margin:7px 0;font-size:16px;line-height:1.45;background:#f5f7fc}
+.news .nt{flex:none;font-size:13px;font-weight:800;border-radius:6px;padding:2px 7px;color:#fff;margin-top:1px}
+.nt.tax{background:var(--g-tax)} .nt.chance{background:var(--g-chance)} .nt.delay{background:var(--g-delay)} .nt.good{background:var(--green)}
+.primary{margin-top:14px;border:0;background:var(--blue);color:#fff;font-size:19px;font-weight:800;border-radius:14px;
+  padding:13px 24px;cursor:pointer}
+.secondary{margin-top:14px;margin-left:8px;border:1px solid var(--line);background:#fff;font-size:17px;font-weight:700;
+  border-radius:14px;padding:12px 18px;cursor:pointer}
 
 /* 시작 화면 */
 #title{position:absolute;inset:0;background:linear-gradient(160deg,#eaf0ff 0%,#f7f9ff 55%,#e9f7f0 100%);z-index:40;
   display:flex;align-items:center;justify-content:center;gap:56px}
-#title .tb{max-width:580px}
+#title .tb{max-width:600px}
 #title h1{font-size:54px;margin:0 0 6px;letter-spacing:-1px}
 #title .sub{font-size:26px;font-weight:700;color:var(--blue-d);margin:0 0 16px}
 #title .desc{font-size:19px;line-height:1.6;color:#2f3a57;margin:0 0 8px}
-#title .notice{font-size:15px;color:var(--muted);margin:0 0 18px}
-#title .proto{font-size:14px;color:var(--muted);margin-top:16px}
+#title .notice{font-size:15px;color:var(--muted);margin:0 0 16px;line-height:1.5}
+#title .proto{font-size:14px;color:var(--muted);margin-top:14px}
 #zipWarn{display:none;background:var(--red-soft);color:var(--red);font-weight:700;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:16px;line-height:1.5}
 #titleBot{width:300px;height:330px}
 
 /* 결과 */
 .bars{margin:6px 0 2px}
-.bar{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:16px}
+.bar{display:flex;align-items:center;gap:10px;margin:5px 0;font-size:15px}
 .bar .lbl{width:120px;color:var(--muted)}
-.bar .trk{flex:1;height:18px;background:#e5eaf4;border-radius:99px;overflow:hidden}
+.bar .trk{flex:1;height:16px;background:#e5eaf4;border-radius:99px;overflow:hidden}
 .bar .fill{display:block;height:100%;border-radius:99px}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
-.stat{background:#f5f7fc;border-radius:12px;padding:8px 10px}
-.stat .n{font-size:24px;font-weight:800}
-.stat .l{font-size:14px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0}
+.stat{background:#f5f7fc;border-radius:12px;padding:7px 10px}
+.stat .n{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat .l{font-size:13px;color:var(--muted)}
 .typecard{display:flex;gap:14px;align-items:center;background:var(--violet-soft);border-radius:16px;padding:6px 16px;margin:6px 0}
 .typecard .tn{font-size:22px;font-weight:800;color:var(--violet)}
-.typecard .tm{font-size:16px;line-height:1.45}
-.habits{font-size:16px;line-height:1.6}
-.testlog{font-size:14px;line-height:1.55;background:#f4f4f4;border-radius:10px;padding:8px 12px;margin-top:8px;color:#333}
+.typecard .tm{font-size:15px;line-height:1.45}
+.habits{font-size:15px;line-height:1.55}
+.testlog{font-size:13px;line-height:1.5;background:#f4f4f4;border-radius:10px;padding:7px 12px;margin-top:8px;color:#333}
 
-/* 세로 화면 안내 */
 #rotate{position:fixed;inset:0;display:none;align-items:center;justify-content:center;text-align:center;
   background:#1f2a44;color:#fff;font-size:20px;line-height:1.6;z-index:100;padding:24px}
 @media (orientation:portrait) and (max-width:820px) and (pointer:coarse){ #rotate{display:flex} }
+@media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
 </style>
 </head>
 <body>
@@ -185,11 +209,18 @@ button{font-family:inherit;color:inherit}
   <div id="top">
     <div id="stageName">연습</div>
     <div id="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="dateText">2026. 7.</span></div>
-    <div id="meta"><span id="progress"></span><span id="score">0점</span>
+    <div id="meta"><span id="tokens" aria-label="남은 조사권"></span><span id="progress"></span><span id="score">0점</span>
       <button class="iconbtn" id="soundBtn" type="button">소리 켜기</button>
       <button class="iconbtn" id="helpBtn" type="button">도움말</button></div>
   </div>
 
+  <div id="town" aria-label="우리 동네 계기판">
+    <h3>우리 동네 계기판</h3>
+    <div class="gauge" data-g="tax"><span class="gl">세금 낭비</span><span class="gt"><span class="gf"></span></span><b class="gn">0</b></div>
+    <div class="gauge" data-g="chance"><span class="gl">기회 손실</span><span class="gt"><span class="gf"></span></span><b class="gn">0</b></div>
+    <div class="gauge" data-g="delay"><span class="gl">처리 지연</span><span class="gt"><span class="gf"></span></span><b class="gn">0</b></div>
+    <p class="gnote">틀리면 올라가요. 수상한 곳을 통과시키면 세금 낭비, 멀쩡한 곳을 막으면 기회 손실·처리 지연.</p>
+  </div>
   <div id="rules"><h3>규칙판</h3><div id="ruleList"></div></div>
 
   <div id="cardArea">
@@ -223,6 +254,9 @@ button{font-family:inherit;color:inherit}
         <path d="M136 36 q6 10 0 14 q-6 -4 0 -14z" fill="#7cc4ff"/></g>
       <g class="m-alert" style="display:none"><circle cx="82" cy="60" r="9" fill="#1f2a44"/><circle cx="118" cy="60" r="9" fill="#1f2a44"/>
         <circle cx="100" cy="88" r="7" fill="#1f2a44"/></g>
+      <g class="m-sleep" style="display:none"><path d="M72 64 Q82 70 92 64 M108 64 Q118 70 128 64" stroke="#1f2a44" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M90 88 Q100 92 110 88" stroke="#1f2a44" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <text x="132" y="34" font-size="22" font-weight="700" fill="#5b7cfa">z</text><text x="146" y="20" font-size="16" font-weight="700" fill="#5b7cfa">z</text></g>
     </svg>
     <div id="botName">살펴봇</div>
     <div id="botNote">가상 AI 조수 · 대사는 미리 짠 시나리오</div>
@@ -242,12 +276,14 @@ button{font-family:inherit;color:inherit}
       <div id="zipWarn">압축 파일 미리보기에서 열린 것 같아요.<br>압축 파일을 마우스 오른쪽 버튼으로 누르고 [모두 압축 풀기] → 풀린 폴더의 index.html을 열어 주세요.</div>
       <h1>살펴봇 공정심사실</h1>
       <p class="sub">AI는 근거를, 결정은 내가!</p>
-      <p class="desc">당신은 가상의 ‘공정조달 심사실’에 새로 온 심사관입니다.<br>AI 조수 살펴봇이 근거를 짚어 주지만, 가끔 틀려요.<br>바뀌는 조달 규칙에 맞춰 기업 카드를 판정해 보세요. (3~4분)</p>
-      <p class="notice">등장 기업·인물·단서는 모두 가상이며, 살펴봇은 조달청의 실제 시스템이 아닙니다.<br>살펴봇의 말과 실수는 미리 짜 둔 시나리오이고, 게임 중에 AI가 판단하지 않습니다.</p>
+      <p class="desc">당신은 가상의 ‘공정조달 심사실’에 새로 온 심사관입니다.<br>조사권은 단계마다 3장뿐. 어디를 확인할지 골라 가며<br>바뀌는 조달 규칙에 맞춰 기업 카드를 판정하세요. (5분 안팎)</p>
+      <p class="notice">등장 기업·인물·단서·동네 소식은 모두 가상이며, 살펴봇은 조달청의 실제 시스템이 아닙니다.<br>살펴봇의 말과 실수는 미리 짜 둔 시나리오이고, 게임 중에 AI가 판단하지 않습니다.</p>
       <button class="primary" id="startSound" type="button">소리 켜고 시작</button>
       <button class="secondary" id="startMute" type="button">소리 없이 시작</button>
+      <button class="secondary" id="startEasy" type="button">쉬운 모드</button>
       <button class="secondary" id="titleHelp" type="button">도움말</button>
-      <div class="proto">프로토타입 v0.3 · 그래픽은 임시 · 마우스·키보드 지원(PC 권장)</div>
+      <p class="notice" style="margin-top:10px;margin-bottom:0">쉬운 모드: 조사권 걱정 없이 숨은 칸을 마음껏 열고, 실전 단계 없이 끝까지 가요. 처음이거나 어린이·어르신께 추천해요.</p>
+      <div class="proto">프로토타입 v0.4 · 판마다 카드가 달라져요 · 마우스·키보드 지원(PC 권장)</div>
     </div>
   </div>
 
@@ -260,157 +296,96 @@ button{font-family:inherit;color:inherit}
 (function(){
 'use strict';
 
-/* ---------- 출처 ---------- */
+/* =========================================================
+   데이터
+   ========================================================= */
 var SRC = {
   woman: '조달청 보도자료(2025.9.16) — 적격심사 신인도 평가 등에서 여성·창업기업 우대',
   deposit: '조달청 보도자료(2026.7.13 「‘유령기업·묻지마 투찰’ 퇴출」, 2026.7.23 「무분별입찰 뿌리뽑는다…9개품목 입찰보증금 의무화」)',
   probe: '조달청 보도자료(2026.9.10 「불공정행위에 엄정 대응, 조달기업은 더욱 두텁게 보호」)',
   innov: '조달청 혁신제품 지정 안내 — 지정 후 3년 수의계약, 보도자료(2025.10.31) — 최대 6년',
   excel: '조달청 보도자료(2026.7.29) — 우수조달물품 수의계약 기본 3년 + 연장 최대 3년',
-  fake: '의심 단서는 게임용 가상 설정이에요.'
+  fake: '의심 단서는 게임용 가상 설정이에요.',
+  none: ''
 };
 
-/* ---------- 살펴봇의 버릇(오판 패턴) ---------- */
 var HABITS = {
   record: ['실적 편견', '납품 실적이 적으면 무조건 의심해요.'],
-  skip:   ['숨은 정보 건너뛰기', '점선 칸을 열어 보지 않고 말해요.'],
+  skip:   ['숨은 정보 건너뛰기', '숨은 칸을 열어 보지 않고 말해요.'],
   old:    ['지난 규칙 습관', '규칙이 바뀐 걸 깜빡해요.'],
   badge:  ['표시만 보기', '표시(배지) 하나만 보고 결론을 내려요.'],
   data:   ['데이터 과신', '데이터 신호를 사실처럼 믿어요.'],
   one:    ['한 가지만 보기', '조건 하나만 맞으면 끝이라고 생각해요.']
 };
+var GAUGE_NAME = {tax:'세금 낭비', chance:'기회 손실', delay:'처리 지연'};
 
-/* ---------- 가상 기업 ---------- */
-var CO = {
-  doran:  {name:'도란도란책상', badges:[['일반','normal']], item:'사무용 책상',
-           rows:[['사업장','경기 ○○시 공장'],['직원','24명'],['납품 실적','최근 3년 41건']]},
-  kkam:   {name:'깜빡이조명', badges:[['일반','normal']], item:'LED 조명',
-           rows:[['사업장','공유오피스 1좌석'],['직원','0명'],['납품 실적','없음']],
-           hidden:['같은 주소 입찰','다른 업체 5곳이 같은 주소']},
-  saessak:{name:'새싹로봇연구소', badges:[['창업기업','start']], item:'방역 로봇',
-           rows:[['사업장','대전 ○○구 연구동'],['직원','6명'],['납품 실적','1건']],
-           hidden:['현장 사진','연구실 가동 중 · 시제품 3대']},
-  deunde: {name:'든든안전화', badges:[['여성기업','women']], item:'작업용 안전화',
-           rows:[['사업장','충북 ○○군 공장'],['직원','15명'],['확인서','여성기업 확인서 제출']],
-           hidden:['현장 사진','생산 라인 가동 중']},
-  malkkeum:{name:'말끔청소기', badges:[['일반','normal']], item:'업소용 청소기',
-           rows:[['사업장','서울 ○○구 상가 2층'],['직원','12명'],['납품 실적','최근 3년 9건']],
-           hidden:['현장 사진','빈 사무실 · 간판 없음']},
-  bareun: {name:'바른의자', badges:[['일반','normal']], item:'사무용 의자',
-           rows:[['사업장','경남 ○○시 공장'],['직원','31명'],['납품 실적','최근 3년 57건']]},
-  solsol: {name:'솔솔환기팬', badges:[['일반','normal']], item:'환기팬',
-           rows:[['사업장','인천 ○○구 공장'],['직원','9명'],['연락','대표번호 연결 확인']],
-           hidden:['현장 사진','창고에 완제품 적재']},
-  ssukssuk:{name:'쑥쑥종이', badges:[['일반','normal']], item:'복사용지',
-           rows:[['사업장','공유오피스'],['직원','1명'],['연락','대표번호 연결 안 됨']],
-           hidden:['같은 날 입찰','다른 이름으로 3건 동시 입찰']},
-  dandan1:{name:'단단헬멧', badges:[['일반','normal']], item:'헬멧',
-           rows:[['사업장','경북 ○○시 공장'],['직원','22명'],['입찰보증금','내지 않음']]},
-  dandan: {name:'단단헬멧', badges:[['일반','normal'],['우려 품목','warn']], item:'헬멧',
-           rows:[['사업장','경북 ○○시 공장'],['직원','22명'],['입찰보증금','내지 않음']]},
-  ttoryeot:{name:'또렷계측', badges:[['일반','normal'],['우려 품목','warn']], item:'오실로스코프',
-           rows:[['사업장','경기 ○○시 연구동'],['직원','17명'],['입찰보증금','납부 완료']]},
-  baeum:  {name:'배움교구', badges:[['일반','normal'],['우려 품목','warn']], item:'교육훈련장비',
-           rows:[['사업장','광주 ○○구 공장'],['직원','20명'],['납품 실적','최근 3년 33건']],
-           hidden:['입찰보증금','확인 안 됨']},
-  baeum2: {name:'배움교구', badges:[['일반','normal'],['우려 품목','warn']], item:'교육훈련장비',
-           rows:[['사업장','광주 ○○구 공장'],['직원','20명'],['입찰보증금','납부 완료']]},
-  bandeut:{name:'반듯프린터', badges:[['일반','normal']], item:'레이저 프린터',
-           rows:[['사업장','경기 ○○시 오피스텔'],['직원','2명'],['납품 실적','없음']],
-           hidden:['현장 사진','사무실 없음 · 우편함만 있음']},
-  kkomkkom:{name:'꼼꼼소화기', badges:[['여성기업','women']], item:'소화기',
-           rows:[['사업장','전북 ○○시 공장'],['직원','18명'],['입찰 횟수','이번 달 12건']],
-           hidden:['현장 사진','공장 가동 · 납품 이행 100%']},
-  teunteun:{name:'튼튼삽', badges:[['일반','normal']], item:'제설용 삽',
-           rows:[['사업장','강원 ○○군 공장'],['직원','11명'],['납품 실적','최근 3년 24건']]},
-  hwikhwik:{name:'휙휙드론', badges:[['일반','normal']], item:'소형 드론',
-           rows:[['사업장','가상오피스'],['직원','0명'],['연락','대표번호 없음']]},
-  hwikhwik2:{name:'휙휙드론', badges:[['일반','normal'],['의심업체 선별','flag']], item:'소형 드론',
-           rows:[['사업장','가상오피스'],['직원','0명'],['입찰보증금','확인 안 됨']]},
-  pingping:{name:'핑핑무전기', badges:[['일반','normal'],['의심업체 선별','flag']], item:'휴대용 무전기',
-           rows:[['사업장','공유오피스 1좌석'],['직원','0명'],['입찰보증금','납부 완료']]},
-  sandeul:{name:'산들공기', badges:[['혁신제품','innov']], item:'교실 공기정화 시스템',
-           rows:[['지정','혁신제품 2025.3 지정(게임 설정)'],['사업장','세종 ○○ 공장'],['직원','22명']]},
-  ujik:   {name:'우직한펌프', badges:[['우수조달물품','excel']], item:'소방 펌프',
-           rows:[['지정','우수조달물품 2018.5 지정(게임 설정)'],['사업장','경북 ○○시 공장'],['직원','40명']],
-           hidden:['지정 기간','2018.5~2024.5 (연장 포함, 만료)']},
-  saessak2:{name:'새싹로봇연구소', badges:[['창업기업','start'],['혁신제품','innov']], item:'방역 로봇',
-           rows:[['지정','혁신제품 2026.10 지정(게임 설정)'],['직원','6명 → 14명'],['납품 실적','2건']]},
-  ssingssing:{name:'씽씽휠체어', badges:[['우수조달물품','excel']], item:'전동 휠체어',
-           rows:[['지정','우수조달물품 2023.4 지정(게임 설정)'],['사업장','부산 ○○구 공장'],['직원','35명']],
-           hidden:['지정 기간','2023.4~2026.4 → 연장 승인, 2029.4까지']},
-  goreun: {name:'고른저울', badges:[['일반','normal']], item:'전자 저울',
-           rows:[['사업장','충남 ○○시 공장'],['직원','13명'],['납품 실적','최근 3년 19건']]}
+/* 단계별 카드 풀: 판마다 여기서 뽑는다(카드 형식은 아래 고정 카드와 같음) */
+var POOL = /*POOL_START*/[{"id":"s1-01","stage":1,"phase":"-","kind":"clean_visible","name":"너울빛등","badges":[["일반","normal"]],"item":"교실 LED 조명","rows":[["사업장","조명 공장 운영"],["직원","23명"],["연락","대표번호 통화됨"]],"slots":[],"ans":"R","bot":{"dir":"R","ok":true,"habit":null,"point":"row0","say":"공장도 직원도 확인돼요. 진행해요!","radar":false},"why":"공장, 직원, 연락처가 모두 확인돼요. 의심 단서가 없으니 심사 진행이에요.","src":"none","outcome":{"good":"너울빛등 납품 완료 → ○○초 교실이 환해졌어요","R":"","L":"괜한 확인 대기로 ○○초 조명 교체가 한 달 늦어졌어요","U":"근거 없는 수의계약으로 조명을 비싸게 샀어요"}},{"id":"s1-02","stage":1,"phase":"-","kind":"paper_visible","name":"차곡차곡함","badges":[["일반","normal"]],"item":"교실 사물함","rows":[["사업장","공유오피스 1좌석"],["직원","0명"],["설립","2023년"]],"slots":[],"ans":"L","bot":{"dir":"L","ok":true,"habit":null,"point":"row0","say":"사물함 회사가 1좌석뿐이에요. 확인해요.","radar":false},"why":"사물함을 만든다는데 사무실은 공유오피스 1좌석, 직원은 0명이에요. 실체 확인이 필요해요.","src":"fake","outcome":{"good":"확인해 보니 서류뿐인 업체 → 진짜 공장이 낙찰받았어요","R":"사물함이 안 와서 ○○중이 세금 들여 다시 샀어요","L":"","U":"서류뿐인 업체와 수의계약해 세금만 날렸어요"}},{"id":"s1-03","stage":1,"phase":"-","kind":"clean_decoy","name":"나란히걸상","badges":[["일반","normal"]],"item":"학생용 의자","rows":[["사업장","의자 공장 운영"],["직원","31명"],["연락","대표번호 통화됨"]],"slots":[{"label":"대표 이력","value":"의자만 20년 만든 장인","decisive":false},{"label":"올해 매출","value":"작년보다 조금 늘었어요","decisive":false}],"ans":"R","bot":{"dir":"R","ok":true,"habit":null,"point":"row0","say":"보이는 칸만으로 충분해요. 조사권 아껴요!","radar":false},"why":"공장·직원·연락처가 다 보여요. 숨은 칸은 판정과 상관없으니 조사권을 아껴도 돼요.","src":"none","outcome":{"good":"○○초 1학년 교실에 튼튼한 새 의자가 들어왔어요","R":"","L":"확인 대기로 새 학기 의자 교체가 늦어졌어요","U":"근거 없는 수의계약으로 의자값이 비싸졌어요"}},{"id":"s1-04","stage":1,"phase":"-","kind":"lowrecord","name":"책뜰마루","badges":[["여성기업","women"]],"item":"도서관 책장","rows":[["사업장","목공 작업장 운영"],["직원","4명"],["납품 실적","아직 없음(첫 입찰)"]],"slots":[{"label":"대표 이력","value":"목공 경력 15년","decisive":false}],"ans":"R","bot":{"dir":"L","ok":false,"habit":"record","point":"row2","say":"실적이 하나도 없어요. 확인해 볼까요?","radar":false},"why":"실적이 없는 건 의심 사유가 아니에요. 작업장과 직원이 있고, 여성기업은 신인도 평가에서 우대받아요.","src":"woman","outcome":{"good":"책뜰마루 첫 납품 → ○○동 작은도서관에 새 책장이 생겼어요","R":"","L":"책뜰마루가 첫 공공 납품 기회를 놓쳤어요","U":"근거 없는 수의계약으로 책장값을 더 냈어요"}},{"id":"s1-05","stage":1,"phase":"-","kind":"paper_hidden","name":"불끔단짝","badges":[["일반","normal"]],"item":"교실용 소화기","rows":[["사업장","소화기 공장 등록"],["직원","11명"],["설립","2020년"]],"slots":[{"label":"공장 주소 확인","value":"등록 주소는 빈 땅","decisive":true}],"ans":"L","bot":{"dir":"R","ok":false,"habit":"skip","point":"row0","say":"공장이 등록돼 있네요. 진행해요!","radar":false},"why":"공장이 등록돼 있어도 숨은 칸을 열면 그 주소가 빈 땅이에요. 실체 확인이 필요해요.","src":"fake","outcome":{"good":"확인 덕분에 진짜 업체 소화기가 ○○초 복도에 놓였어요","R":"소화기가 끝내 안 와서 ○○초가 다시 사느라 세금이 들었어요","L":"","U":"빈 땅 업체와 수의계약해 세금이 새어 나갔어요"}},{"id":"s1-06","stage":1,"phase":"-","kind":"clean_visible","name":"하늬맑음","badges":[["일반","normal"]],"item":"교실 공기청정기","rows":[["사업장","조립 공장 1곳"],["직원","15명"],["납품 실적","최근 3년 41건"]],"slots":[],"ans":"R","bot":{"dir":"R","ok":true,"habit":null,"point":"row0","say":"공장도 실적도 확인돼요. 진행해요!","radar":false},"why":"조립 공장과 직원이 확인돼요. 의심할 단서가 없으니 심사 진행이에요.","src":"none","outcome":{"good":"하늬맑음 납품 → ○○초 교실 공기가 상쾌해졌어요","R":"","L":"확인 대기로 청정기 설치가 한 달 늦어졌어요","U":"근거 없는 수의계약으로 청정기를 비싸게 샀어요"}},{"id":"s1-07","stage":1,"phase":"-","kind":"clean_decoy","name":"꿋꿋발걸음","badges":[["창업기업","start"]],"item":"현장용 안전화","rows":[["사업장","신발 공장 운영"],["직원","12명"],["연락","대표번호 통화됨"]],"slots":[{"label":"공공 납품 이력","value":"공공기관 납품 1건","decisive":false}],"ans":"R","bot":{"dir":"L","ok":false,"habit":"record","point":"slot0","say":"숨은 칸 보니 납품이 1건뿐이에요. 의심돼요.","radar":false},"why":"공장·직원·연락처가 다 확인돼요. 창업기업은 실적이 적을 수 있고, 신인도 평가에서 오히려 우대받아요.","src":"woman","outcome":{"good":"꿋꿋발걸음 안전화 → ○○동 환경미화원 발이 편해졌어요","R":"","L":"꿋꿋발걸음 보류 → ○○동 환경미화원이 새 안전화를 못 받았어요","U":"근거 없는 수의계약으로 안전화를 비싸게 샀어요"}},{"id":"s1-08","stage":1,"phase":"-","kind":"paper_hidden","name":"모락모락식판","badges":[["일반","normal"]],"item":"급식 식판","rows":[["사업장","식판 공장 운영"],["직원","26명"],["연락","대표번호 통화됨"]],"slots":[{"label":"직원 명단","value":"다른 업체 명단과 똑같음","decisive":true},{"label":"식판 견본","value":"견본 무게·크기 정상","decisive":false}],"ans":"L","bot":{"dir":"L","ok":true,"habit":null,"point":"slot0","say":"직원 명단 칸이 수상해요. 열어 봐요.","radar":false},"why":"직원 명단이 다른 업체와 똑같아요. 이름만 빌려 쓴 업체일 수 있어 확인이 필요해요. 견본은 판정과 상관없어요.","src":"fake","outcome":{"good":"확인 덕분에 진짜 공장 식판이 ○○초 급식실에 왔어요","R":"식판이 반만 와서 ○○초 급식실이 다시 사느라 세금이 들었어요","L":"","U":"이름만 빌린 업체와 수의계약해 세금이 샜어요"}},{"id":"s1-09","stage":1,"phase":"-","kind":"clean_visible","name":"또박또박판","badges":[["일반","normal"]],"item":"교실 칠판","rows":[["사업장","작업장 가동 중"],["직원","9명"],["설립","2014년"]],"slots":[],"ans":"R","bot":{"dir":"R","ok":true,"habit":null,"point":"row0","say":"작업장이 잘 돌아가요. 진행해요!","radar":false},"why":"작업장이 가동 중이고 직원도 있어요. 의심 단서가 없으니 심사 진행이에요.","src":"none","outcome":{"good":"○○초 교실에 글씨가 또렷한 새 칠판이 걸렸어요","R":"","L":"확인 대기로 칠판 교체가 방학 뒤로 밀렸어요","U":"근거 없는 수의계약으로 칠판을 비싸게 샀어요"}},{"id":"s1-10","stage":1,"phase":"-","kind":"paper_visible","name":"뽀득뽀득손","badges":[["일반","normal"]],"item":"자동 손소독기","rows":[["사업장","상가 2층 사무실"],["연락","대표번호 연결 안 됨"],["같은 주소","업체 5곳 등록"]],"slots":[],"ans":"L","bot":{"dir":"L","ok":true,"habit":null,"point":"row2","say":"같은 주소에 업체가 5곳이에요. 확인해요.","radar":false},"why":"대표번호가 안 되고, 같은 주소에 업체가 5곳이에요. 진짜 회사인지 확인이 필요해요.","src":"fake","outcome":{"good":"확인 덕분에 ○○동 주민센터에 손소독기가 제때 왔어요","R":"연락이 끊겨 손소독기는 안 오고 세금만 날렸어요","L":"","U":"연락 안 되는 업체와 수의계약해 세금이 샜어요"}},{"id":"s1-11","stage":1,"phase":"-","kind":"clean_decoy","name":"눈길싹싹","badges":[["일반","normal"]],"item":"제설 삽","rows":[["사업장","삽 생산 공장"],["직원","18명"],["연락","대표번호 통화됨"]],"slots":[{"label":"창고 사진","value":"삽 3천 자루 보관 중","decisive":false}],"ans":"R","bot":{"dir":"R","ok":true,"habit":null,"point":"row0","say":"다 보여요. 숨은 칸은 안 열어도 돼요.","radar":false},"why":"공장·직원·연락처가 모두 보여요. 창고 사진은 멀쩡함을 한 번 더 확인할 뿐이에요.","src":"none","outcome":{"good":"첫눈 오기 전 ○○동 골목마다 제설 삽이 준비됐어요","R":"","L":"확인 대기로 첫눈 뒤에야 제설 삽이 도착했어요","U":"근거 없는 수의계약으로 제설 삽을 비싸게 샀어요"}},{"id":"s1-12","stage":1,"phase":"-","kind":"paper_hidden","name":"말끔쓱싹","badges":[["일반","normal"]],"item":"바닥 청소 로봇","rows":[["사업장","시내 사무실"],["직원","7명"],["연락","대표번호 통화됨"]],"slots":[{"label":"로봇 시연 영상","value":"영상 속 로봇 잘 움직임","decisive":false},{"label":"현장 방문 기록","value":"사무실 텅 비어 있음","decisive":true}],"ans":"L","bot":{"dir":"R","ok":false,"habit":"skip","point":"slot0","say":"시연 영상이 멀쩡해요. 진행해요!","radar":false},"why":"영상은 어디서든 구할 수 있어요. 현장 방문 기록을 열면 직원 7명이라던 사무실이 텅 비어 있어요. 실체 확인이 필요해요.","src":"fake","outcome":{"good":"확인 덕분에 진짜 로봇이 ○○동 경로당 바닥을 닦아요","R":"로봇이 끝내 안 와서 청소를 따로 맡기느라 세금이 샜어요","L":"","U":"빈 사무실 업체와 수의계약해 세금이 샜어요"}},{"id":"s2-01","stage":2,"phase":"a","kind":"deposit_paid","name":"오롯물결","badges":[["일반","normal"],["우려 품목","warn"]],"item":"오실로스코프","rows":[["입찰보증금","납부 완료"],["사업장","○○시 계측 공장"],["연락","대표번호 연결 확인"]],"slots":[],"ans":"R","bot":{"dir":"L","ok":false,"habit":"badge","point":"badge","say":"우려 품목 표시가 있어요. 확인이 필요해요.","radar":false},"why":"우려 품목 표시만으로는 의심 사유가 아니에요. 보증금을 냈고 실체 단서도 없으니 진행해요.","src":"deposit","outcome":{"good":"오실로스코프 도착 → ○○고 과학실 전기 실험 시작","R":"","L":"멀쩡한 업체를 붙잡아 ○○고 과학 실험이 한 달 밀렸어요","U":"값 비교 없는 수의계약 → 더 비싸게 사서 세금 낭비"}},{"id":"s2-02","stage":2,"phase":"a","kind":"deposit_paid","name":"몸소익힘","badges":[["창업기업","start"],["우려 품목","warn"]],"item":"교육훈련장비","rows":[["사업장","○○군 작업장"],["직원","5명"],["납품 실적","1건"]],"slots":[{"label":"입찰보증금","value":"납부 완료 · 영수증 확인","decisive":true}],"ans":"R","bot":{"dir":"R","ok":true,"habit":null,"point":"slot0","say":"보증금 칸이 핵심이에요. 납부가 확인돼요.","radar":false},"why":"우려 품목은 보증금부터 확인해요. 숨은 칸에서 납부 완료가 보이고, 실적 1건은 의심 사유가 아니라 진행해요.","src":"deposit","outcome":{"good":"응급처치 훈련 장비 도착 → ○○동 청소년센터 교실 개강","R":"","L":"멀쩡한 창업기업을 멈춤 → 첫 큰 납품 기회를 놓쳤어요","U":"근거 없는 수의계약 → 값 비교 못 해 세금 낭비"}},{"id":"s2-03","stage":2,"phase":"a","kind":"deposit_missing_visible","name":"빛갈래공방","badges":[["일반","normal"],["우려 품목","warn"]],"item":"적외선분광기","rows":[["사업장","○○시 실험동"],["납품 실적","최근 3년 22건"],["입찰보증금","내지 않음"]],"slots":[],"ans":"L","bot":{"dir":"L","ok":true,"habit":null,"point":"row2","say":"보증금 줄을 보세요. 아직 안 냈어요.","radar":false},"why":"8.3부터 우려 품목에 입찰하면 모든 업체가 보증금을 내야 해요. 실적이 많아도 안 냈으니 확인이 필요해요.","src":"deposit","outcome":{"good":"보증금 낸 업체끼리 겨뤄 ○○고 분광기를 제값에 샀어요","R":"보증금 없이 낙찰 → 계약 포기로 다시 입찰, 세금 낭비","L":"","U":"근거 없는 수의계약 → 규칙 건너뛰어 세금 낭비"}},{"id":"s2-04","stage":2,"phase":"a","kind":"deposit_missing_hidden","name":"켜켜이막","badges":[["일반","normal"],["우려 품목","warn"]],"item":"진공증착기","rows":[["사업장","○○시 자체 공장"],["직원","31명"],["납품 실적","최근 3년 14건"]],"slots":[{"label":"입찰보증금","value":"확인 안 됨","decisive":true},{"label":"현장 사진","value":"기계 가동 중","decisive":false}],"ans":"L","bot":{"dir":"R","ok":false,"habit":"old","point":"row0","say":"공장이 있어요. 지난달처럼 진행해요.","radar":false},"why":"실체는 멀쩡하지만 8.3부터 우려 품목은 보증금이 꼭 필요해요. 숨은 칸에서 납부가 확인 안 돼 확인이 필요해요.","src":"deposit","outcome":{"good":"확인 요청 → 보증금 낸 업체 장비가 ○○ 직업학교 실습실에","R":"보증금 없이 낙찰 → 납품 포기, 다시 입찰해 세금 낭비","L":"","U":"근거 없는 수의계약 → 값 비교 없이 사서 세금 낭비"}},{"id":"s2-05","stage":2,"phase":"a","kind":"clean_decoy","name":"함박눈치움","badges":[["여성기업","women"]],"item":"제설용 삽","rows":[["사업장","○○군 자체 공장"],["연락","대표번호 연결 확인"],["납품 실적","최근 3년 4건"]],"slots":[{"label":"제품 무게","value":"1.2kg 가벼운 삽","decisive":false},{"label":"지난 겨울 후기","value":"주민 만족 4.6점","decisive":false}],"ans":"R","bot":{"dir":"R","ok":true,"habit":null,"point":"row0","say":"보이는 줄에 단서가 없어요. 진행해요.","radar":false},"why":"우려 품목이 아니라 보증금과 상관없어요. 보이는 줄에 실체 단서가 없고, 여성기업은 신인도 평가에서 우대받아요.","src":"woman","outcome":{"good":"제설 삽 미리 도착 → ○○동 언덕길 첫눈에도 안전","R":"","L":"여성기업이 겨울 납품 기회를 놓쳐 일감이 줄었어요","U":"근거 없는 수의계약 → 값 비교 없이 사서 세금 낭비"}},{"id":"s2-06","stage":2,"phase":"b","kind":"data_false_alarm","name":"싹쓸바람로봇","badges":[["일반","normal"]],"item":"방역 로봇","rows":[["데이터 신호","입찰 횟수 급증"],["직원","18명"],["납품 실적","최근 3년 11건"]],"slots":[{"label":"급증 이유","value":"새 공장 열어 생산 2배","decisive":true}],"ans":"R","bot":{"dir":"L","ok":false,"habit":"data","point":"row0","say":"레이더에 입찰 급증이 잡혔어요. 수상해요!","radar":true},"why":"데이터 신호는 살펴볼 단서일 뿐 사실이 아니에요. 숨은 칸을 보니 새 공장을 열어 입찰을 늘린 거라 진행해요.","src":"probe","outcome":{"good":"방역 로봇 도착 → ○○초 교실 소독 시간이 절반으로","R":"","L":"멀쩡한 업체 조사로 ○○초 방역 로봇이 늦게 도착","U":"근거 없는 수의계약 → 값 비교 못 해 세금 낭비"}},{"id":"s2-07","stage":2,"phase":"b","kind":"data_false_alarm","name":"알갱이저울","badges":[["일반","normal"],["우려 품목","warn"]],"item":"질량분석기","rows":[["입찰보증금","납부 완료"],["데이터 신호","1년간 주소 2번 바뀜"],["직원","12명"]],"slots":[{"label":"현장 확인","value":"새 건물 짓는 동안 잠깐 이사","decisive":true}],"ans":"R","bot":{"dir":"R","ok":true,"habit":null,"point":"slot0","say":"신호는 단서일 뿐이에요. 현장 칸을 봐요.","radar":true},"why":"보증금을 냈고, 주소가 바뀐 건 새 건물을 짓는 동안 잠깐 이사했기 때문이에요. 신호만 믿지 않고 확인했으니 진행해요.","src":"probe","outcome":{"good":"질량분석기 도착 → ○○시 수돗물 검사가 빨라졌어요","R":"","L":"이사 사유 조사로 수질 검사 장비가 한 달 늦어짐","U":"근거 없는 수의계약 → 값 비교 못 해 세금 낭비"}},{"id":"s2-08","stage":2,"phase":"b","kind":"paper_hidden","name":"가지런책상","badges":[["일반","normal"]],"item":"학생용 책상","rows":[["데이터 신호","낙찰률 갑자기 높음"],["납품 실적","최근 3년 7건"],["연락","홈페이지 운영 중"]],"slots":[{"label":"사업장","value":"공유오피스 1좌석","decisive":true}],"ans":"L","bot":{"dir":"L","ok":true,"habit":null,"point":"slot0","say":"레이더가 울렸어요. 사업장 칸이 중요해요.","radar":true},"why":"신호만으로는 알 수 없어요. 숨은 칸을 여니 책상을 만든다는데 사업장이 공유오피스 1좌석뿐이라 확인이 필요해요.","src":"fake","outcome":{"good":"확인 요청 → 진짜 공장 있는 업체 책상이 ○○초 교실에","R":"공장 없는 업체 낙찰 → 책상 납품 실패, 세금 낭비","L":"","U":"근거 없는 수의계약 → 납품 실패로 세금 낭비"}},{"id":"s2-09","stage":2,"phase":"b","kind":"paper_hidden","name":"얼른끄미","badges":[["일반","normal"]],"item":"소화기","rows":[["데이터 신호","입찰가가 늘 똑같음"],["사업장","○○시 상가 2층"],["납품 실적","최근 3년 6건"]],"slots":[{"label":"제품 검사","value":"소화기 성능 검사 통과","decisive":false},{"label":"연락","value":"대표번호 3번 다 연결 안 됨","decisive":true}],"ans":"L","bot":{"dir":"L","ok":true,"habit":null,"point":"slot1","say":"연락 칸을 열어 보세요. 확인이 필요해요.","radar":true},"why":"제품 검사 칸은 판정과 상관없어요. 대표번호가 세 번 다 연결 안 돼 실체가 의심되니 확인이 필요해요.","src":"fake","outcome":{"good":"확인 요청 → 연락 잘 되는 업체가 소화기를 제때 납품","R":"연락 끊긴 업체 낙찰 → 소화기 못 받아 다시 입찰, 세금 낭비","L":"","U":"근거 없는 수의계약 → 납품 실패로 세금 낭비"}},{"id":"s2-10","stage":2,"phase":"b","kind":"clean_visible","name":"볕뉘등불","badges":[["창업기업","start"]],"item":"교실 LED 조명","rows":[["데이터 신호","이상 신호 없음"],["사업장","○○시 자체 공장"],["납품 실적","1건"]],"slots":[],"ans":"R","bot":{"dir":"R","ok":true,"habit":null,"point":"row0","say":"레이더도 조용하고 단서도 없어요.","radar":true},"why":"레이더 신호도 실체 단서도 없어요. 실적 1건은 의심 사유가 아니고, 창업기업은 신인도 평가에서 우대받아요.","src":"woman","outcome":{"good":"LED 조명 교체 → ○○초 교실이 환하고 전기료도 줄어요","R":"","L":"실적 적은 창업기업이 첫 납품 기회를 놓쳤어요","U":"근거 없는 수의계약 → 값 비교 못 해 세금 낭비"}},{"id":"s2-11","stage":2,"phase":"c","kind":"flag_missing","name":"옹골찬신발","badges":[["일반","normal"],["의심업체 선별","flag"]],"item":"작업용 안전화","rows":[["입찰보증금","확인 안 됨"],["사업장","○○군 자체 공장"],["연락","대표번호 연결 확인"]],"slots":[],"ans":"L","bot":{"dir":"R","ok":false,"habit":"old","point":"row1","say":"예전처럼 실체만 보면 돼요. 진행해요!","radar":true},"why":"11.1부터 데이터로 선별된 의심업체도 보증금을 내야 해요. 실체가 멀쩡해 보여도 보증금이 확인 안 돼 확인이 필요해요.","src":"deposit","outcome":{"good":"확인 요청 → 보증금 낸 업체 안전화가 ○○동 환경미화원께","R":"보증금 없이 낙찰 → 계약 포기로 다시 입찰, 세금 낭비","L":"","U":"근거 없는 수의계약 → 규칙 건너뛰어 세금 낭비"}},{"id":"s2-12","stage":2,"phase":"c","kind":"flag_missing","name":"소복소복그릇","badges":[["일반","normal"],["의심업체 선별","flag"]],"item":"급식용 식판","rows":[["사업장","○○시 자체 공장"],["직원","9명"],["납품 실적","최근 3년 16건"]],"slots":[{"label":"입찰보증금","value":"내지 않음","decisive":true},{"label":"식판 재질","value":"스테인리스 · 튼튼함","decisive":false}],"ans":"L","bot":{"dir":"L","ok":true,"habit":null,"point":"slot0","say":"선별된 업체예요. 보증금 칸부터 봐요.","radar":true},"why":"의심업체로 선별되면 11.1부터 보증금을 내야 해요. 숨은 칸을 보니 내지 않아 확인이 필요해요. 식판 재질은 상관없어요.","src":"deposit","outcome":{"good":"확인 요청 → 규칙 지킨 업체 식판이 ○○초 급식실로","R":"보증금 없이 낙찰 → 납품 포기로 다시 입찰, 세금 낭비","L":"","U":"근거 없는 수의계약 → 값 비교 없이 사서 세금 낭비"}},{"id":"s2-13","stage":2,"phase":"c","kind":"flag_paid_paper","name":"앉음새의자","badges":[["일반","normal"],["의심업체 선별","flag"]],"item":"강당용 의자","rows":[["입찰보증금","납부 완료"],["같은 주소","업체 5곳 등록"],["납품 실적","최근 3년 8건"]],"slots":[],"ans":"L","bot":{"dir":"R","ok":false,"habit":"one","point":"row0","say":"보증금을 냈으니 이제 진행하면 돼요.","radar":true},"why":"보증금을 냈어도 끝이 아니에요. 같은 주소에 업체가 5곳이나 있어 실체가 의심되니 확인이 필요해요.","src":"fake","outcome":{"good":"확인 요청 → 진짜 공장 의자가 ○○동 마을회관에","R":"주소만 있는 업체 낙찰 → 의자 미납, 세금 낭비","L":"","U":"근거 없는 수의계약 → 의자 미납으로 세금 낭비"}},{"id":"s2-14","stage":2,"phase":"c","kind":"clean_visible","name":"촉촉물안개","badges":[["일반","normal"]],"item":"교실용 가습기","rows":[["사업장","○○시 자체 공장"],["연락","대표번호 연결 확인"],["데이터 신호","이상 신호 없음"]],"slots":[],"ans":"R","bot":{"dir":"R","ok":true,"habit":null,"point":"row2","say":"선별 표시도 신호도 없어요. 진행해요.","radar":true},"why":"우려 품목도, 의심업체 선별 표시도, 레이더 신호도 없어요. 보증금 규칙과 상관없고 실체 단서도 없어 진행해요.","src":"none","outcome":{"good":"가습기 도착 → ○○초 겨울 교실이 촉촉해졌어요","R":"","L":"멀쩡한 업체 확인에 시간 써서 가습기가 늦게 와요","U":"근거 없는 수의계약 → 값 비교 없이 사서 세금 낭비"}},{"id":"s3-01","stage":3,"phase":"-","kind":"eligible_visible","name":"또랑조명","badges":[["혁신제품","innov"]],"item":"교실 눈 보호 조명","rows":[["혁신제품 지정","2025년(게임 설정)"],["생산 공장","현장 확인 완료"],["대표번호","연결 잘 됨"]],"slots":[],"ans":"U","bot":{"dir":"U","ok":true,"habit":null,"point":"row0","say":"지정 3년 안이라 수의계약 대상이에요.","radar":true},"why":"혁신제품은 지정 후 3년 동안 수의계약이 돼요. 2025년 지정이라 기간 안이고 의심 단서도 없어요.","src":"innov","outcome":{"good":"또랑조명 납품 → ○○초 교실이 눈부심 없이 환해짐","R":"일반 입찰로 돌려 석 달 지연 → ○○초 교실 등 깜빡깜빡","L":"멀쩡한 혁신 기업을 붙잡음 → 새 조명 팔 기회 놓침","U":""}},{"id":"s3-02","stage":3,"phase":"-","kind":"paper_hidden","name":"쉬엄쉬엄의자","badges":[],"item":"어린이 도서관 의자","rows":[["납품 실적","3년간 7건"],["대표번호","연결 잘 됨"],["제출 서류","빠짐없음"]],"slots":[{"label":"직원 명부","value":"직원 9명 등록","decisive":false},{"label":"사무실 현장","value":"공유오피스 1좌석","decisive":true}],"ans":"L","bot":{"dir":"R","ok":false,"habit":"skip","point":"slot0","say":"직원이 9명이나 있으니 진행해도 돼요.","radar":true},"why":"서류와 직원 수는 멀쩡해 보여도 사무실이 공유오피스 1좌석뿐이에요. 9명이 일할 곳이 없어 실체 확인이 필요해요.","src":"fake","outcome":{"good":"실체 확인으로 빈 회사 걸러냄 → ○○도서관 의자 예산 지킴","R":"빈 회사가 낙찰 → 의자는 안 오고 세금만 나감","U":"근거 없는 수의계약 → 빈 회사로 세금이 샘","L":""}},{"id":"s3-03","stage":3,"phase":"-","kind":"deposit_paid","name":"야무진투구","badges":[["우려 품목","warn"]],"item":"헬멧","rows":[["입찰보증금","납부 완료"],["생산 공장","가동 중"],["납품 실적","5년간 21건"]],"slots":[],"ans":"R","bot":{"dir":"R","ok":true,"habit":null,"point":"row0","say":"보증금 납부 완료라 심사 진행해요.","radar":true},"why":"헬멧은 우려 품목이라 입찰보증금을 내야 해요. 이미 납부했고 다른 의심 단서도 없어 심사 진행이에요.","src":"deposit","outcome":{"good":"야무진투구 헬멧 납품 → ○○동 자전거 교실에 새 헬멧","L":"보증금 낸 업체를 또 붙잡음 → 헬멧 배송 한 달 지연","U":"근거 없는 수의계약 → 값 비교 못 해 세금 낭비","R":""}},{"id":"s3-04","stage":3,"phase":"-","kind":"eligible_hidden","name":"씩씩밀개","badges":[["혁신제품","innov"]],"item":"전동 제설기","rows":[["혁신제품 지정","2022년(게임 설정)"],["생산 공장","현장 확인 완료"],["대표번호","연결 잘 됨"]],"slots":[{"label":"지정 기간 연장","value":"연장 승인 → 2028년까지","decisive":true}],"ans":"U","bot":{"dir":"R","ok":false,"habit":"skip","point":"row0","say":"지정한 지 3년이 지나서 일반 심사예요.","radar":true},"why":"혁신제품은 연장되면 최대 6년까지 수의계약이 돼요. 숨은 칸에 연장 승인이 있어 2028년까지 가능해요.","src":"innov","outcome":{"good":"씩씩밀개 제설기 바로 납품 → ○○동 언덕길 첫눈 전 준비 끝","R":"일반 입찰로 돌려 늦어짐 → 첫눈 온 날 ○○동 언덕길 꽁꽁","L":"연장까지 받은 혁신 기업을 붙잡음 → 납품 기회 놓침","U":""}},{"id":"s3-05","stage":3,"phase":"-","kind":"clean_decoy","name":"접고펴고","badges":[],"item":"강당 접이식 탁자","rows":[["납품 실적","5년간 18건"],["사무실","현장 확인 완료"],["대표번호","연결 잘 됨"]],"slots":[{"label":"직원 명부","value":"직원 6명 근무 중","decisive":false}],"ans":"R","bot":{"dir":"R","ok":true,"habit":null,"point":"row1","say":"사무실도 확인됐고 의심 단서가 없어요.","radar":true},"why":"보이는 칸이 모두 멀쩡해요. 숨은 직원 명부는 열어도 판정이 바뀌지 않으니 조사권을 아껴도 돼요.","src":"none","outcome":{"good":"접고펴고 탁자 납품 → ○○동 주민센터 강당 행사 준비 끝","L":"멀쩡한 업체를 붙잡음 → ○○동 강당 행사 탁자 지연","U":"혁신제품도 아닌데 수의계약 → 더 비싸게 사 세금 샘","R":""}},{"id":"s3-06","stage":3,"phase":"-","kind":"expired_hidden","name":"살랑날개","badges":[["우수조달물품","excel"]],"item":"교실 공기 순환기","rows":[["우수조달물품","연장 받음(게임 설정)"],["생산 공장","가동 중"],["납품 실적","6년간 40건"]],"slots":[{"label":"첫 지정 연도","value":"2019년 지정(게임 설정)","decisive":true}],"ans":"R","bot":{"dir":"R","ok":true,"habit":null,"point":"slot0","say":"첫 지정 2019년, 6년이 다 지났어요.","radar":true},"why":"우수조달물품은 기본 3년에 연장은 최대 3년이에요. 2019년 첫 지정이라 2025년에 끝났으니 일반 심사로 진행해요.","src":"excel","outcome":{"good":"일반 입찰로 값 비교 → ○○초 순환기를 더 알뜰하게 구입","U":"끝난 지정으로 수의계약 → 값 비교 없이 사 세금 낭비","L":"멀쩡한 업체를 붙잡음 → ○○초에 좋은 순환기 들일 기회 놓침","R":""}},{"id":"s3-07","stage":3,"phase":"-","kind":"mixed","name":"개운방역단","badges":[["혁신제품","innov"]],"item":"자동 손 소독기","rows":[["혁신제품 지정","2025년(게임 설정)"],["대표번호","연결 안 됨"],["사무실 주소","같은 주소 업체 5곳"]],"slots":[],"ans":"L","bot":{"dir":"U","ok":false,"habit":"badge","point":"badge","say":"혁신제품 배지가 있으니 수의계약이에요!","radar":true},"why":"혁신제품 기간 안이어도 실체가 의심되면 먼저 확인해야 해요. 대표번호가 안 되고 같은 주소 업체가 5곳이에요.","src":"fake","outcome":{"good":"실체 확인 요청 → 수상한 업체 걸러내 ○○초 방역 예산 지킴","U":"배지만 보고 수의계약 → 소독기는 안 오고 세금만 나감","R":"단서 놓치고 진행 → 낙찰 뒤 연락 끊겨 세금 낭비","L":""}},{"id":"s3-08","stage":3,"phase":"-","kind":"eligible_visible","name":"졸졸물길","badges":[["우수조달물품","excel"]],"item":"교실 음수대","rows":[["우수조달 지정","2024년(게임 설정)"],["생산 공장","현장 확인 완료"],["직원","23명 근무"]],"slots":[],"ans":"U","bot":{"dir":"U","ok":true,"habit":null,"point":"row0","say":"우수조달물품 기본 3년 안이에요.","radar":true},"why":"우수조달물품은 지정 후 기본 3년 동안 수의계약이 돼요. 2024년 지정이라 2027년까지 가능하고 의심 단서도 없어요.","src":"excel","outcome":{"good":"졸졸물길 음수대 바로 설치 → ○○초 아이들 시원한 물","R":"일반 입찰로 돌려 늦어짐 → 음수대 설치 새 학기 뒤로","L":"멀쩡한 우수 업체를 붙잡음 → 좋은 제품 살 기회 놓침","U":""}},{"id":"s3-09","stage":3,"phase":"-","kind":"deposit_missing_hidden","name":"콩닥계측","badges":[["우려 품목","warn"]],"item":"오실로스코프","rows":[["생산 공장","현장 확인 완료"],["대표번호","연결 잘 됨"],["납품 실적","4년간 12건"]],"slots":[{"label":"입찰보증금","value":"납부 확인 안 됨","decisive":true}],"ans":"L","bot":{"dir":"L","ok":true,"habit":null,"point":"slot0","say":"보증금 납부 확인이 안 돼요. 확인 필요해요.","radar":true},"why":"오실로스코프는 우려 품목이라 모든 업체가 입찰보증금을 내야 해요. 다른 건 멀쩡해도 납부가 확인 안 돼 확인 필요예요.","src":"deposit","outcome":{"good":"보증금 확인 요청 → ○○고 과학실 장비 입찰 공정하게","R":"보증금 없이 진행 → 낙찰 뒤 포기해 재입찰, 세금 낭비","U":"근거 없는 수의계약 → 보증금도 없이 계약해 세금 샘","L":""}},{"id":"s3-10","stage":3,"phase":"-","kind":"eligible_visible","name":"몽실마당","badges":[["의심업체 선별","flag"],["혁신제품","innov"]],"item":"놀이터 안전 매트","rows":[["입찰보증금","납부 완료"],["혁신제품 지정","2024년(게임 설정)"],["생산 공장","현장 확인 완료"]],"slots":[],"ans":"U","bot":{"dir":"L","ok":false,"habit":"data","point":"badge","say":"데이터가 뽑은 의심업체예요. 확인이 필요해요.","radar":true},"why":"의심업체로 뽑혀도 보증금을 냈고 실체 단서가 없으면 괜찮아요. 2024년 지정 혁신제품이라 3년 안이니 수의계약이에요.","src":"deposit","outcome":{"good":"몽실마당 매트 바로 설치 → ○○동 놀이터 넘어져도 폭신","R":"일반 입찰로 돌려 늦어짐 → ○○동 놀이터 매트 교체 한 달 지연","L":"데이터만 믿고 붙잡음 → 보증금 낸 혁신 기업이 물건 팔 길 막힘","U":""}},{"id":"s3-11","stage":3,"phase":"-","kind":"expired_hidden","name":"푸슝소방","badges":[["혁신제품","innov"]],"item":"자동 분사 소화기","rows":[["혁신제품 지정","2022년(게임 설정)"],["생산 공장","가동 중"],["납품 실적","4년간 30건"]],"slots":[{"label":"지정 기간 연장","value":"연장 안 함 → 2025년 만료","decisive":true},{"label":"안전 검사","value":"올해 검사 통과","decisive":false}],"ans":"R","bot":{"dir":"R","ok":true,"habit":null,"point":"slot0","say":"연장을 안 해서 2025년에 끝났어요.","radar":true},"why":"혁신제품은 기본 3년이고 연장해야 더 갈 수 있어요. 2022년 지정에 연장이 없어 2025년에 끝났으니 일반 심사예요.","src":"innov","outcome":{"good":"일반 입찰로 값 비교 → ○○동 경로당 소화기 알뜰 교체","U":"기간 끝난 제품을 수의계약 → 더 비싸게 사 세금 샘","L":"멀쩡한 혁신 기업을 붙잡음 → 입찰 기회조차 놓침","R":""}},{"id":"s3-12","stage":3,"phase":"-","kind":"eligible_hidden","name":"따순자리","badges":[["우수조달물품","excel"]],"item":"정류장 온열 의자","rows":[["우수조달 지정","2021년(게임 설정)"],["생산 공장","현장 확인 완료"],["대표번호","연결 잘 됨"]],"slots":[{"label":"지정 기간 연장","value":"연장 승인 → 2027년까지","decisive":true}],"ans":"U","bot":{"dir":"U","ok":true,"habit":null,"point":"slot0","say":"연장 승인이 있어 아직 기간 안이에요.","radar":true},"why":"우수조달물품은 기본 3년에 최대 3년 연장돼요. 2021년 지정이지만 연장 승인으로 2027년까지라 수의계약이에요.","src":"excel","outcome":{"good":"따순자리 의자 바로 설치 → ○○동 정류장 겨울 아침 따끈","R":"일반 입찰로 돌려 늦어짐 → 한겨울 내내 차가운 의자","L":"멀쩡한 업체를 붙잡음 → 따뜻한 의자 들일 기회 놓침","U":""}},{"id":"s4-01","stage":4,"phase":"-","kind":"quitter_missing","name":"뽀드득눈길","badges":[],"item":"제설 삽","rows":[["최근 1년 입찰 포기","2회"],["입찰보증금","확인 안 됨"],["작업장","공장 등록 확인"]],"slots":[],"ans":"L","bot":null,"why":"최근 1년에 입찰을 2번 포기한 업체도 보증금을 내야 해요(예정 규칙이 시행됐다고 가정). 보증금이 확인 안 돼 확인 필요예요.","src":"deposit","outcome":{"good":"보증금 확인 요청 → 끝까지 납품할 업체가 ○○동 골목 눈 치움","R":"낙찰 뒤 또 포기 → 다시 공고하느라 세금 낭비, ○○동 골목 빙판","L":"","U":"근거 없는 수의계약 → 삽은 안 오고 세금만 날림, 골목은 빙판"}},{"id":"s4-02","stage":4,"phase":"-","kind":"quitter_missing","name":"터벅걸음새","badges":[],"item":"안전화","rows":[["대표번호","연결 잘 됨"],["입찰보증금","내지 않음"],["납품 실적","최근 3년 9건"]],"slots":[{"label":"입찰 포기 이력","value":"최근 1년 2회 포기","decisive":true},{"label":"공장 위치","value":"등록 주소와 같음","decisive":false}],"ans":"L","bot":null,"why":"겉은 멀쩡해도 숨은 칸에 최근 1년 입찰 포기 2회가 있어요. 예정 규칙이 시행됐다고 가정하면 보증금을 내야 해서 확인 필요예요.","src":"deposit","outcome":{"good":"포기 이력 확인 → 믿을 업체가 ○○동 주민센터 안전화 납품","R":"낙찰 뒤 또 포기 → 다시 공고하느라 세금 낭비, 안전화 교체 멈춤","L":"","U":"근거 없는 수의계약 → 안전화 납품 실패, 세금만 낭비"}},{"id":"s4-03","stage":4,"phase":"-","kind":"quitter_paid","name":"폭신걸상","badges":[],"item":"교실 의자","rows":[["최근 1년 입찰 포기","2회"],["입찰보증금","납부 완료"],["작업장","공장·창고 확인"]],"slots":[{"label":"포기 사유","value":"원자재 값이 갑자기 오름","decisive":false}],"ans":"R","bot":null,"why":"입찰 포기 2회라 보증금을 내야 하는 업체지만(예정 규칙이 시행됐다고 가정) 이미 냈고 다른 의심 단서도 없어 심사 진행이에요.","src":"deposit","outcome":{"good":"폭신걸상 납품 완료 → ○○초 새 학기 전 교실 의자 교체","R":"","L":"이미 낸 보증금을 못 보고 멈춤 → ○○초 의자 교체 한 달 늦어짐","U":"근거 없는 수의계약 → 경쟁 없이 비싸게 사서 세금 낭비"}},{"id":"s4-04","stage":4,"phase":"-","kind":"mixed","name":"깨우침두레","badges":[["우려 품목","warn"],["혁신제품","innov"]],"item":"교육훈련장비","rows":[["입찰보증금","납부 완료"],["혁신제품 지정","2025년(게임 설정)"],["작업장","생산 라인 확인"]],"slots":[],"ans":"U","bot":null,"why":"우려 품목이라 보증금이 필요한데 이미 냈어요. 혁신제품 지정 뒤 3년 안이라 바로 수의계약할 수 있어요.","src":"innov","outcome":{"good":"수의계약으로 바로 구매 → ○○초 안전교육실에 새 장비 설치","R":"일반 입찰로 돌림 → ○○초 교육 장비 도착이 두 달 늦어짐","L":"멀쩡한 혁신제품을 멈춤 → 새 기술이 동네에 쓰일 기회 놓침","U":""}},{"id":"s4-05","stage":4,"phase":"-","kind":"mixed","name":"모락지킴이","badges":[["의심업체 선별","flag"],["우수조달물품","excel"]],"item":"소화기","rows":[["입찰보증금","납부 완료"],["우수조달 지정","2022년(게임 설정)"],["작업장","생산 라인 가동"]],"slots":[{"label":"지정 연장","value":"2025년 3년 연장(게임 설정)","decisive":true},{"label":"대표 연락처","value":"통화 연결 잘 됨","decisive":false}],"ans":"U","bot":null,"why":"의심업체로 뽑혔지만 보증금을 냈고 실체 의심 단서는 없어요. 기본 3년은 끝났어도 숨은 칸에 연장이 있어 아직 수의계약 기간이에요.","src":"excel","outcome":{"good":"수의계약으로 바로 구매 → ○○동 주민센터 소화기 제때 교체","R":"기간 끝난 줄 알고 일반 입찰 → 소화기 교체가 한 달 늦어짐","L":"멀쩡한 우수조달물품을 멈춤 → 좋은 제품이 쓰일 기회 놓침","U":""}},{"id":"s4-06","stage":4,"phase":"-","kind":"lowrecord","name":"솔솔뿌리개","badges":[],"item":"방역 로봇","rows":[["기업 구분","여성 창업기업"],["납품 실적","최근 3년 1건"],["작업장","공장 등록 확인"]],"slots":[],"ans":"R","bot":null,"why":"실적이 적은 건 의심 사유가 아니에요. 여성·창업기업은 신인도 평가에서 우대받고, 실체 의심 단서도 없어 심사 진행이에요.","src":"woman","outcome":{"good":"솔솔뿌리개 납품 완료 → ○○도서관 방역 로봇이 매일 소독 시작","R":"","L":"실적만 보고 멈춤 → 여성 창업기업이 납품 기회를 놓침","U":"근거 없는 수의계약 → 경쟁 없이 사서 세금 낭비"}}]/*POOL_END*/;
+
+/* 고정 카드: 같은 기업이 규칙 전후·단계 사이에 다시 나오는 장면 */
+var A = {
+  sprout1: {id:'a-sprout1', stage:1, phase:'-', kind:'lowrecord', name:'새싹로봇연구소', badges:[['창업기업','start']], item:'방역 로봇',
+    rows:[['사업장','대전 ○○구 연구동'],['직원','6명'],['납품 실적','1건']],
+    slots:[{label:'현장 사진', value:'연구실 가동 중 · 시제품 3대', decisive:false}], ans:'R',
+    bot:{dir:'L', ok:false, habit:'record', point:'row2', say:'납품 실적이 1건뿐이에요! 확인이 필요할까요?', radar:false},
+    why:'실적이 적다는 것만으로는 의심 사유가 아니에요. 사업장과 직원 모두 멀쩡하죠. 조달청은 적격심사 신인도 평가 등에서 창업기업을 우대해요.', src:'woman',
+    outcome:{good:'새싹로봇연구소 첫 납품 → ○○동 보건소에서 방역 로봇 시범 운행', R:'', L:'새싹로봇연구소 보류 → 방역 로봇 첫 납품 기회가 사라졌어요', U:''}, sprout:true},
+  helmet1: {id:'a-helmet1', stage:1, phase:'-', kind:'clean_visible', name:'단단헬멧', badges:[['일반','normal']], item:'헬멧',
+    rows:[['사업장','경북 ○○시 공장'],['직원','22명'],['입찰보증금','내지 않음']], slots:[], ans:'R',
+    bot:{dir:'R', ok:true, habit:null, point:'row1', say:'공장도 있고 직원도 많아요. 진행!', radar:false},
+    why:'의심 단서가 없어요. 8월 3일 전에는 이 품목도 입찰보증금을 따로 내지 않았어요.', src:'deposit',
+    outcome:{good:'단단헬멧 납품 → ○○동 공사장 안전모 교체 완료', R:'', L:'멀쩡한 단단헬멧이 확인 대기 → 안전모 교체 2주 지연', U:''}},
+  helmet2: {id:'a-helmet2', stage:2, phase:'a', kind:'deposit_missing_visible', name:'단단헬멧', badges:[['일반','normal'],['우려 품목','warn']], item:'헬멧',
+    rows:[['사업장','경북 ○○시 공장'],['직원','22명'],['입찰보증금','내지 않음']], slots:[], ans:'L',
+    bot:{dir:'R', ok:false, habit:'old', point:'row1', say:'지난달에 통과한 그 회사예요. 이번에도 진행!', radar:false},
+    why:'지난달과 카드 내용은 같지만, 8월 3일부터 헬멧은 우려 품목이라 입찰자 모두 입찰보증금을 내야 해요. 보증금을 내지 않았으니 확인이 필요해요.', src:'deposit',
+    outcome:{good:'보증금 규칙 확인 → 묻지마 입찰 한 건을 걸렀어요', R:'보증금 없이 통과 → 낙찰 뒤 포기, 재입찰로 세금 낭비', L:'', U:'보증금 없이 수의계약 → 규칙 위반, 세금 낭비'},
+    repeat:'1단계에서 본 단단헬멧이에요. 카드 내용은 같은데, 무엇이 바뀌었을까요?'},
+  sprout3: {id:'a-sprout3', stage:3, phase:'-', kind:'eligible_visible', name:'새싹로봇연구소', badges:[['창업기업','start'],['혁신제품','innov']], item:'방역 로봇',
+    rows:[['지정','2026.10 혁신제품(게임 설정)'],['직원','6명 → 14명'],['납품 실적','2건']], slots:[], ans:'U',
+    bot:{dir:'L', ok:false, habit:'record', point:'row2', say:'납품 실적이 2건뿐… 확인이 필요할까요?', radar:true},
+    why:'혁신제품으로 지정된 제품이에요. 실적이 적어도 지정 기간 안이면 수의계약으로 살 수 있어요.', src:'innov',
+    outcome:{good:'새싹로봇연구소 수의계약 → ○○초 교실 방역 바로 시작', R:'수의계약 대신 일반 입찰 → 방역 로봇 도입 한 달 지연', L:'새싹로봇연구소 또 보류 → 혁신 기술 도입 기회를 놓쳤어요', U:''}, sprout:true}
 };
-function card(co, o){ return Object.assign({}, CO[co], o); }
 
-/* ---------- 단계와 카드 ---------- */
-var STAGES = [
-  { id:0, name:'연습', date:'2026. 7.', tutorial:true, leftSub:'실체가 의심될 때',
-    cards:[
-      card('doran', {ans:'R', bot:{row:2, dir:'R', ok:true, say:'납품 실적이 꾸준해요. 진행해도 좋겠어요.'},
-        tip:'카드를 오른쪽으로 밀거나 [심사 진행 →] 버튼을 누르세요', why:'의심 단서가 없는 성실한 기업이에요.'}),
-      card('hwikhwik', {ans:'L', bot:{row:1, dir:'L', ok:true, say:'직원이 0명, 사업장은 가상오피스예요. 수상해요.'},
-        tip:'실체가 의심되면 왼쪽으로! [← 확인 필요]', why:'직원 0명, 가상오피스, 대표번호 없음. 실체가 의심돼요.'}),
-      card('ssukssuk', {ans:'L', requireReveal:true, bot:{row:'h', dir:'L', ok:true, say:'점선 칸에 뭔가 걸리는 게 있어요. 눌러서 확인해 보세요.'},
-        tip:'먼저 점선 칸(숨은 정보)을 눌러 확인한 뒤 판정하세요', tipAfter:'좋아요! 이제 판정하세요', why:'같은 날 다른 이름으로 3건 입찰했어요. 실체가 의심돼요.'})
-    ]},
-  { id:1, name:'1단계 · 기본 심사', date:'2026. 7.', leftSub:'실체가 의심될 때',
-    intro:{title:'연습 끝! 1단계 · 기본 심사', body:'<p>이제 진짜 심사예요. 카드 8장을 판정하세요.</p><p><b>← 확인 필요</b>: 주소·직원·연락처 등 실체가 의심될 때(게임 속 행동)<br><b>심사 진행 →</b>: 의심 단서가 없을 때</p><p>살펴봇의 말은 <b>참고용</b>이에요. 살펴봇에게는 몇 가지 <b>버릇</b>이 있어요. 잡아내 보세요!</p>'},
-    cards:[
-      card('doran', {ans:'R', bot:{row:2, dir:'R', ok:true, say:'납품 실적이 꾸준해요. 진행!'}, why:'의심 단서가 없는 성실한 기업이에요.'}),
-      card('kkam', {ans:'L', bot:{row:0, dir:'L', ok:true, say:'사업장 주소가 수상해요. 확인이 필요해 보여요.'}, why:'직원 0명, 공유오피스 1좌석, 같은 주소 업체 5곳. 실체가 의심돼요.', src:SRC.fake}),
-      card('saessak', {ans:'R', sprout:true, bot:{row:2, dir:'L', ok:false, habit:'record', say:'납품 실적이 1건뿐이에요! 확인이 필요할까요?'},
-        why:'실적이 적다는 것만으로는 의심 사유가 아니에요. 사업장·직원·현장 모두 멀쩡하죠. 조달청은 적격심사 신인도 평가 등에서 창업기업을 우대해요.', src:SRC.woman}),
-      card('deunde', {ans:'R', bot:{row:2, dir:'R', ok:true, say:'여성기업 확인서가 있어요. 진행!'}, why:'의심 단서가 없고, 여성기업은 신인도 평가 우대 대상이에요.', src:SRC.woman}),
-      card('malkkeum', {ans:'L', bot:{row:1, dir:'R', ok:false, habit:'skip', say:'서류는 깔끔해요. 바로 진행해요!'}, why:'서류는 멀쩡해도 현장이 비어 있고 간판도 없어요. 숨은 정보까지 확인해야 해요.', src:SRC.fake}),
-      card('bareun', {ans:'R', bot:{row:2, dir:'R', ok:true, say:'실적 많고 깔끔해요. 진행!'}, why:'의심 단서가 없는 성실한 기업이에요.'}),
-      card('dandan1', {ans:'R', bot:{row:1, dir:'R', ok:true, say:'공장도 있고 직원도 많아요. 진행!'},
-        why:'의심 단서가 없어요. 8월 3일 전에는 이 품목도 입찰보증금을 따로 내지 않았어요.'}),
-      card('ssukssuk', {ans:'L', bot:{row:'h', dir:'L', ok:true, say:'점선 칸에 입찰 기록이 있어요. 한번 보세요.'}, why:'연락이 안 되고, 같은 날 다른 이름으로 3건 입찰했어요.', src:SRC.fake})
-    ]},
-  { id:2, name:'2단계 · 무분별 입찰 근절', date:'2026. 8. 3.', leftSub:'의심·보증금 미확인',
-    cards:[
-      card('dandan', {ans:'L', repeat:'1단계에서 본 단단헬멧이에요. 카드 내용은 같은데, 무엇이 바뀌었을까요?',
-        rule:{date:'2026. 8. 3.', key:'우려 품목 입찰보증금', label:'새 규칙', text:'<b>우려 품목</b>(9개): 입찰자 <b>모두</b> 보증금. 안 냈거나 미확인이면 ←',
-          body:'<p>2026년 8월 3일부터 조달청이 공고한 <b>‘무분별입찰 우려 품목’</b> 9개에 입찰하면 <b>모든 업체</b>가 <b>입찰보증금</b>을 내야 해요.</p><p>의심 판정이 아니라 <b>품목 조건</b>이에요. <span class="badge b-warn">우려 품목</span> 카드는 보증금 납부를 확인하세요.<br>납부 완료 → <b>심사 진행</b> · 내지 않음·확인 안 됨 → <b>← 확인 필요</b></p><p style="font-size:15px;color:#56617a">9개 품목: 액체크로마토그래피, 질량분석기, 약품분배기 및 포장기, 반도체검사기, 오실로스코프, 교육훈련장비, 진공증착기, 헬멧, 적외선분광기(2026.7.23 보도자료). 게임에는 이 중 헬멧·오실로스코프·교육훈련장비만 나와요.</p>', src:SRC.deposit},
-        bot:{row:1, dir:'R', ok:false, habit:'old', say:'지난달에 통과한 그 회사예요. 이번에도 진행!'},
-        why:'지난달과 카드 내용은 같지만, 8월 3일부터 헬멧은 우려 품목이라 입찰자 모두 입찰보증금을 내야 해요. 보증금을 내지 않았으니 확인이 필요해요. 같은 카드라도 규칙이 바뀌면 판정이 바뀌어요.', src:SRC.deposit}),
-      card('ttoryeot', {ans:'R', bot:{row:-1, dir:'L', ok:false, habit:'badge', say:'우려 품목이에요! 의심 업체예요. 멈춰요!'},
-        why:'우려 품목은 ‘의심 업체’라는 뜻이 아니라 입찰 조건이에요. 보증금을 냈으니 정상적으로 심사를 진행해요.', src:SRC.deposit}),
-      card('doran', {ans:'R', bot:{row:-1, dir:'R', ok:true, say:'우려 품목 표시가 없어요. 진행!'}, why:'우려 품목이 아니고 의심 단서도 없어요.'}),
-      card('bandeut', {ans:'L', radar:true,
-        rule:{date:'2026. 9. 11.', key:'직권조사', label:'새 규칙', text:'신고 없이도 <b>직권조사</b> → 살펴봇 <b>데이터 레이더</b>(가상)',
-          body:'<p>2026년 9월 11일부터 조달청은 신고가 없어도 언론보도, 납품검사·품질점검 결과, 반복 위반 이력 등으로 불공정행위가 의심되면 <b>직권조사</b>를 할 수 있어요.</p><p>게임에서는 이런 단서를 살펴봇의 <b>데이터 레이더</b>(가상 기능)로 보여 줘요. 신호는 단서일 뿐, <b>판단은 심사관 몫</b>이에요.</p>', src:SRC.probe},
-        bot:{row:'h', dir:'L', ok:true, say:'납품검사 불합격 이력이 3번 있어요. 숨은 정보를 확인해 보세요.'}, why:'현장에 사무실이 없고 우편함만 있어요. 실체가 의심돼요.', src:SRC.fake}),
-      card('kkomkkom', {ans:'R', radar:true, bot:{row:2, dir:'L', ok:false, habit:'data', say:'이번 달 입찰이 많아요! 의심 기업 같아요.'},
-        why:'데이터 신호는 단서일 뿐이에요. 숨은 정보를 보면 공장이 돌아가고 납품도 잘 지켰어요. 확인은 사람이 해요.'}),
-      card('baeum', {ans:'L', radar:true, bot:{row:'h', dir:'L', ok:true, say:'우려 품목이네요. 점선 칸에서 보증금 납부를 확인해 보세요.'}, why:'우려 품목인데 입찰보증금이 확인되지 않았어요.', src:SRC.deposit}),
-      card('hwikhwik2', {ans:'L', radar:true,
-        rule:{date:'2026. 11. 1.', key:'의심업체 입찰보증금', label:'새 규칙', text:'데이터로 <b>선별된 의심업체</b>도 보증금',
-          body:'<p>2026년 11월 1일부터 조달청이 물품 입찰에서 <b>데이터로 골라낸 페이퍼컴퍼니 의심업체</b>도 입찰보증금을 내야 해요.</p><p><span class="badge b-flag">의심업체 선별</span> 표시가 있으면 보증금 납부를 확인하세요. 실체가 의심되는 단서도 함께 보세요.</p>', src:SRC.deposit},
-        bot:{row:2, dir:'L', ok:true, say:'의심업체로 선별됐는데 보증금이 확인 안 돼요.'}, why:'선별된 의심업체인데 입찰보증금이 확인되지 않았어요.', src:SRC.deposit}),
-      card('teunteun', {ans:'R', radar:true, bot:{row:-1, dir:'R', ok:true, say:'이상 신호가 없어요. 진행!'}, why:'의심 단서가 없어요.'}),
-      card('pingping', {ans:'L', radar:true, bot:{row:2, dir:'R', ok:false, habit:'one', say:'보증금을 냈네요. 그럼 진행!'},
-        why:'보증금을 냈어도 직원 0명, 공유오피스 1좌석이라는 실체 의심 단서는 그대로예요. 규칙은 겹쳐서 적용돼요.', src:SRC.fake})
-    ]},
-  { id:3, name:'3단계 · 혁신제품 수의계약', date:'2026. 12.', up:true, leftSub:'의심·보증금 미확인',
-    cards:[
-      card('sandeul', {ans:'U', radar:true,
-        rule:{date:'현행 제도', key:'혁신제품·우수조달물품 수의계약', label:'알아 둘 제도', text:'<b>혁신제품·우수조달물품</b>: 지정 기간 안이면 <b>↑ 수의계약</b>',
-          body:'<p><span class="badge b-innov">혁신제품</span>은 지정 후 3년 동안 수요기관이 <b>수의계약</b>으로 살 수 있어요(연장하면 최대 6년).</p><p><span class="badge b-excel">우수조달물품</span>도 <b>기본 3년 + 연장 최대 3년</b> 동안 수의계약이 가능해요.</p><p>지정 기간 안이면 <b>↑ 위로</b>! 기간이 끝났으면 <b>심사 진행 →</b>으로 일반 심사.</p>', src:SRC.innov + ' / ' + SRC.excel},
-        bot:{row:0, dir:'U', ok:true, say:'혁신제품 지정 2년 차예요. 수의계약 대상!'}, why:'혁신제품 지정 기간 안이라 수의계약이 가능해요.', src:SRC.innov}),
-      card('doran', {ans:'R', radar:true, bot:{row:-1, dir:'R', ok:true, say:'일반 기업이에요. 진행!'}, why:'혁신제품·우수조달물품이 아니고 의심 단서도 없어요.'}),
-      card('ujik', {ans:'R', radar:true, bot:{row:0, dir:'U', ok:false, habit:'skip', say:'우수조달물품이에요! 수의계약!'},
-        why:'우수조달물품 수의계약은 기본 3년 + 연장 최대 3년이에요. 숨은 정보를 보면 이미 기간이 끝났으니 일반 심사예요.', src:SRC.excel}),
-      card('kkam', {ans:'L', radar:true, bot:{row:0, dir:'L', ok:true, say:'또 그 공유오피스 주소예요! 확인 필요!'}, why:'실체가 의심돼요.', src:SRC.fake}),
-      card('saessak2', {ans:'U', radar:true, sprout:true, bot:{row:2, dir:'L', ok:false, habit:'record', say:'납품 실적이 2건뿐… 확인이 필요할까요?'},
-        why:'혁신제품으로 지정된 제품이에요. 실적이 적어도 지정 기간 안이면 수의계약으로 살 수 있어요.', src:SRC.innov}),
-      card('baeum2', {ans:'R', radar:true, bot:{row:2, dir:'R', ok:true, say:'우려 품목이지만 보증금 납부 완료! 진행!'}, why:'보증금을 냈고 의심 단서도 없어요.', src:SRC.deposit}),
-      card('ssingssing', {ans:'U', radar:true, bot:{row:0, dir:'R', ok:false, habit:'skip', say:'지정된 지 3년이 지났어요. 일반 심사!'},
-        why:'처음 3년이 지났어도 연장 승인을 받아 2029년 4월까지 유효해요. 숨은 정보를 보면 알 수 있어요.', src:SRC.excel}),
-      card('goreun', {ans:'R', radar:true, bot:{row:-1, dir:'R', ok:true, say:'일반 기업, 단서 없음. 진행!'}, why:'의심 단서가 없어요.'})
-    ]}
+var TUTORIAL = [
+  {id:'t1', name:'도란도란책상', badges:[['일반','normal']], item:'사무용 책상', rows:[['사업장','경기 ○○시 공장'],['직원','24명'],['납품 실적','최근 3년 41건']], slots:[], ans:'R',
+   bot:{dir:'R', ok:true, habit:null, point:'row2', say:'납품 실적이 꾸준해요. 진행해도 좋겠어요.', radar:false},
+   tip:'카드를 오른쪽으로 밀거나 [심사 진행 →] 버튼을 누르세요', why:'의심 단서가 없는 성실한 기업이에요.', outcome:{good:'',R:'',L:'',U:''}},
+  {id:'t2', name:'휙휙드론', badges:[['일반','normal']], item:'소형 드론', rows:[['사업장','가상오피스'],['직원','0명'],['연락','대표번호 없음']], slots:[], ans:'L',
+   bot:{dir:'L', ok:true, habit:null, point:'row1', say:'직원이 0명, 사업장은 가상오피스예요. 수상해요.', radar:false},
+   tip:'실체가 의심되면 왼쪽으로! [← 확인 필요]', why:'직원 0명, 가상오피스, 대표번호 없음. 실체가 의심돼요.', outcome:{good:'',R:'',L:'',U:''}},
+  {id:'t3', name:'쑥쑥종이', badges:[['일반','normal']], item:'복사용지', rows:[['사업장','경기 ○○시 상가'],['직원','4명'],['납품 실적','최근 3년 6건']],
+   slots:[{label:'입찰 기록', value:'같은 날 다른 이름으로 3건 입찰', decisive:true}], ans:'L', requireReveal:true,
+   bot:{dir:'L', ok:true, habit:null, point:'slot0', say:'보이는 정보는 멀쩡한데, 입찰 기록이 마음에 걸려요.', radar:false},
+   tip:'점선 칸을 눌러 숨은 정보를 확인하세요. 진짜 심사에서는 조사권 1장이 들어요', tipEasy:'점선 칸을 눌러 숨은 정보를 확인하세요', tipAfter:'좋아요! 이제 판정하세요', why:'같은 날 다른 이름으로 3건 입찰했어요. 실체가 의심돼요.', outcome:{good:'',R:'',L:'',U:''}},
+  {id:'t4', name:'솔솔환기팬', badges:[['일반','normal']], item:'환기팬', rows:[['사업장','인천 ○○구 공장'],['직원','9명'],['납품 실적','최근 3년 15건']],
+   slots:[{label:'현장 사진', value:'창고에 완제품 적재', decisive:false}], ans:'R',
+   bot:{dir:'R', ok:true, habit:null, point:'row2', say:'보이는 정보만으로도 충분해 보여요.', radar:false},
+   tip:'조사권은 아껴 쓰세요. 보이는 정보만으로 충분하면 바로 판정!', tipEasy:'보이는 정보만으로 충분하면 바로 판정해도 돼요!', why:'의심 단서가 없어요. 이런 카드에 조사권을 쓰면 아까워요.', outcome:{good:'',R:'',L:'',U:''}}
+];
+
+var RULES = {
+  a: {date:'2026. 8. 3.', key:'우려 품목 입찰보증금', label:'새 규칙', text:'<b>우려 품목</b>(9개): 입찰자 <b>모두</b> 보증금. 안 냈거나 미확인이면 ←',
+      body:'<p>2026년 8월 3일부터 조달청이 공고한 <b>‘무분별입찰 우려 품목’</b> 9개에 입찰하면 <b>모든 업체</b>가 <b>입찰보증금</b>을 내야 해요.</p><p>의심 판정이 아니라 <b>품목 조건</b>이에요. <span class="badge b-warn">우려 품목</span> 카드는 보증금 납부를 확인하세요.<br>납부 완료 → <b>심사 진행</b> · 내지 않음·확인 안 됨 → <b>← 확인 필요</b></p><p class="plain"><b>쉬운 말</b> 입찰보증금 = 낙찰되면 계약하겠다는 약속으로 맡기는 돈 · 우려 품목 = 무분별한 입찰이 많아 조달청이 따로 정한 물건</p><p style="font-size:14px;color:#56617a">9개 품목: 액체크로마토그래피, 질량분석기, 약품분배기 및 포장기, 반도체검사기, 오실로스코프, 교육훈련장비, 진공증착기, 헬멧, 적외선분광기(2026.7.23 보도자료)</p>', src:'deposit'},
+  b: {date:'2026. 9. 11.', key:'직권조사', label:'새 규칙', text:'신고 없이도 <b>직권조사</b> → 살펴봇 <b>데이터 레이더</b>(가상)',
+      body:'<p>2026년 9월 11일부터 조달청은 신고가 없어도 언론보도, 납품검사·품질점검 결과, 반복 위반 이력 등으로 불공정행위가 의심되면 <b>직권조사</b>를 할 수 있어요.</p><p>게임에서는 이런 단서를 살펴봇의 <b>데이터 레이더</b>(가상 기능)로 보여 줘요. 신호는 단서일 뿐, <b>판단은 심사관 몫</b>이에요.</p><p class="plain"><b>쉬운 말</b> 직권조사 = 누가 신고하지 않아도 조달청이 먼저 나서서 조사하는 것</p>', src:'probe'},
+  c: {date:'2026. 11. 1.', key:'의심업체 입찰보증금', label:'새 규칙', text:'데이터로 <b>선별된 의심업체</b>도 보증금',
+      body:'<p>2026년 11월 1일부터 조달청이 물품 입찰에서 <b>데이터로 골라낸 페이퍼컴퍼니 의심업체</b>도 입찰보증금을 내야 해요.</p><p><span class="badge b-flag">의심업체 선별</span> 표시가 있으면 보증금 납부를 확인하세요. 보증금을 냈어도 실체 의심 단서가 있으면 <b>← 확인 필요</b>.</p><p class="plain"><b>쉬운 말</b> 페이퍼컴퍼니 = 서류로만 있고 실제로 일할 능력이 없는 회사</p>', src:'deposit'},
+  s3: {date:'현행 제도', key:'혁신제품·우수조달물품 수의계약', label:'알아 둘 제도', text:'<b>혁신제품·우수조달물품</b>: 지정 기간 안이면 <b>↑ 수의계약</b>',
+      body:'<p><span class="badge b-innov">혁신제품</span>은 지정 후 3년 동안 수요기관이 <b>수의계약</b>으로 살 수 있어요(연장하면 최대 6년).</p><p><span class="badge b-excel">우수조달물품</span>도 <b>기본 3년 + 연장 최대 3년</b> 동안 수의계약이 가능해요.</p><p>지정 기간 안이면 <b>↑ 위로</b>! 기간이 끝났으면 <b>심사 진행 →</b>으로 일반 심사. 실체 의심 단서나 보증금 문제가 있으면 <b>← 확인 필요</b>.</p><p class="plain"><b>쉬운 말</b> 수의계약 = 경쟁 입찰 없이 정해진 업체와 바로 계약하는 것 · 혁신제품·우수조달물품 = 조달청이 기술과 품질을 인정해 지정한 제품</p>', src:'innov'},
+  s4: {date:'2027. 1.', key:'실전 심사 · 혼자 판단', label:'예정 규칙(가정)', text:'최근 1년 <b>2회 이상 입찰 포기</b> 업체도 보증금(예정)',
+      body:'<p>2027년 1월이라고 가정해요. 예정대로 시행되면 <b>최근 1년 동안 2회 이상 입찰을 포기한 업체</b>도 입찰보증금을 내야 해요(예정 규칙).</p><p>살펴봇은 휴가예요. 지금까지 배운 <b>모든 규칙</b>을 써서 혼자 판단해 보세요. 조사권은 2장이에요.</p><p class="plain"><b>쉬운 말</b> 상습 입찰포기자 = 입찰에 참여했다가 그만두기를 되풀이한 업체(최근 1년 2회 이상)</p>', src:'deposit'}
+};
+
+var STAGE_META = [
+  {id:0, name:'연습', date:'2026. 7.', tutorial:true, tokens:99, leftSub:'실체가 의심될 때'},
+  {id:1, name:'1단계 · 기본 심사', date:'2026. 7.', tokens:3, leftSub:'실체가 의심될 때',
+   intro:{title:'1단계 · 기본 심사', body:'<p>카드 8장을 판정해요.</p><p><b>조사권 3장</b>으로 점선 칸을 열 수 있어요. 꼭 필요한 곳에만 쓰세요(남으면 장당 +15점).</p><p>살펴봇의 말은 참고만! 살펴봇의 <b>버릇</b>을 잡아 보세요.</p>',
+     easyBody:'<p>카드 8장을 판정해요.</p><p><b>쉬운 모드</b>라서 점선 칸을 마음껏 열어 볼 수 있어요.</p><p>살펴봇의 말은 참고만! 살펴봇의 <b>버릇</b>을 잡아 보세요.</p>'}},
+  {id:2, name:'2단계 · 무분별 입찰 근절', date:'2026. 8. 3.', tokens:3, leftSub:'의심·보증금 미확인'},
+  {id:3, name:'3단계 · 혁신제품 수의계약', date:'2026. 12.', tokens:3, up:true, leftSub:'의심·보증금 미확인'},
+  {id:4, name:'실전 · 혼자 판단', date:'2027. 1.', tokens:2, up:true, solo:true, leftSub:'의심·보증금 미확인'}
 ];
 
 var BASE_RULES = [
@@ -419,10 +394,60 @@ var BASE_RULES = [
   {date:'현행', text:'여성·창업기업은 신인도 평가 <b>우대</b>'}
 ];
 
-/* ---------- 상태 ---------- */
-var state = { scale:1, si:0, ci:0, score:0, log:[], revealed:false, busy:true, shownAt:0, started:false,
-  t0:0, firstScoredAt:null, firstCorrectAt:null, sprout1:null, drag:null, rules:[], card:null,
-  modalCb:null, modalAt:0, modalKind:'', lastKeyAt:-1e9, helpPausedAt:null, resultShown:false, holdMs:0 };
+/* =========================================================
+   카드 뽑기(판마다 다르게, 심사 번호로 다시 할 수 있음)
+   ========================================================= */
+function rng(seed){
+  var s = seed >>> 0;
+  return function(){ s = (s + 0x6D2B79F5) >>> 0; var t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+function shuffle(a, R){ for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(R() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function clone(c){ return Object.assign({}, c); }
+// maxWrong: 이 묶음에서 살펴봇이 틀리는 카드의 최대 수(살펴봇이 너무 자주 틀리면 아무도 참고하지 않음)
+function pick(pool, quotas, total, R, maxWrong){
+  var left = shuffle(pool.slice(), R), out = [], wrong = 0;
+  var isWrong = function(c){ return !!(c.bot && !c.bot.ok); };
+  function take(filter){
+    var idx = -1;
+    for (var i = 0; i < left.length; i++) { if (filter(left[i]) && !(isWrong(left[i]) && wrong >= maxWrong)) { idx = i; break; } }
+    if (idx < 0) for (var j = 0; j < left.length; j++) { if (filter(left[j])) { idx = j; break; } }
+    if (idx < 0) return false;
+    var c = left.splice(idx, 1)[0]; if (isWrong(c)) wrong++; out.push(c); return true;
+  }
+  quotas.forEach(function(q){ for (var n = 0; n < q[1]; n++) take(function(c){ return c.kind === q[0]; }); });
+  while (out.length < total && left.length) take(function(){ return true; });
+  return out.map(clone);
+}
+function poolOf(stage, phase){ return POOL.filter(function(c){ return c.stage === stage && (!phase || c.phase === phase); }); }
+function deal(seed){
+  var R = rng(seed);
+  var s1 = pick(poolOf(1), [['paper_hidden',2],['paper_visible',1],['clean_decoy',1],['clean_visible',1]], 6, R, 2);
+  s1 = s1.concat([clone(A.sprout1), clone(A.helmet1)]);
+  shuffle(s1, R);
+  // 1단계 첫 카드는 살펴봇이 맞고 숨은 칸 없이 판단할 수 있는 카드로(연습 직후 첫 판정의 난도를 판마다 비슷하게)
+  var easyIdx = s1.findIndex(function(c){ return !(c.bot && !c.bot.ok) && !(c.slots || []).some(function(s){ return s.decisive; }); });
+  if (easyIdx > 0) { var t0 = s1[0]; s1[0] = s1[easyIdx]; s1[easyIdx] = t0; }
+  var a = shuffle(pick(poolOf(2,'a'), [['deposit_paid',1]], 2, R, 1), R);
+  var b = shuffle(pick(poolOf(2,'b'), [['data_false_alarm',1],['paper_hidden',1]], 3, R, 1), R);
+  // 후보가 하나뿐인 종류를 앞에 둬야 살펴봇 오답 상한(maxWrong)이 지켜진다
+  var c = shuffle(pick(poolOf(2,'c'), [['flag_paid_paper',1],['flag_missing',1]], 3, R, 1), R);
+  a = [clone(A.helmet2)].concat(a);
+  a[0].rule = 'a'; if (b[0]) b[0].rule = 'b'; if (c[0]) c[0].rule = 'c';
+  var s2 = a.concat(b, c);
+  var s3 = pick(poolOf(3), [['mixed',1],['eligible_visible',2],['eligible_hidden',1],['expired_hidden',1]], 7, R, 2).concat([clone(A.sprout3)]);
+  shuffle(s3, R); s3[0].rule = 's3';
+  var s4 = shuffle(pick(poolOf(4), [['quitter_missing',1],['mixed',1]], 3, R, 0), R);
+  if (s4[0]) s4[0].rule = 's4';
+  return [TUTORIAL.map(clone), s1, s2, s3, s4];
+}
+
+/* =========================================================
+   상태
+   ========================================================= */
+var state = { scale:1, si:0, ci:0, score:0, log:[], busy:true, shownAt:0, started:false, decks:null, seed:0,
+  t0:0, firstScoredAt:null, firstCorrectAt:null, sprout1:null, drag:null, rules:[], card:null, opened:{},
+  tokens:0, tokensUsed:0, tokensTotal:0, g:{tax:0, chance:0, delay:0}, news:[], skipTutorial:false, easy:false, gaugeExplained:false,
+  modalCb:null, modalAt:0, modalKind:'', lastKeyAt:-1e9, helpPausedAt:null, resultShown:false, lastResult:null };
 var SHOW_TESTLOG = !/[?&]notest/.test(location.search);
 
 var $ = function(s){ return document.querySelector(s); };
@@ -441,7 +466,9 @@ window.addEventListener('orientationchange', fit);
 if (window.visualViewport) window.visualViewport.addEventListener('resize', fit);
 fit();
 
-/* ---------- 소리 (WebAudio 합성, 시작 버튼을 누른 뒤에만) ---------- */
+/* =========================================================
+   소리 (WebAudio 합성, 시작 버튼 뒤에만)
+   ========================================================= */
 var ac = null, soundOn = false;
 function initAudio(){
   try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); }
@@ -472,16 +499,15 @@ var SFX = {
   stamp: function(){ noise(.12,.35,420); tone(90,.15,'sine',.25); },
   rule: function(){ [523,659,784,1046].forEach(function(f,i){ tone(f,.18,'triangle',.14,i*.1); }); },
   whoosh: function(){ noise(.16,.1,1800); },
-  reveal: function(){ tone(880,.07,'sine',.12); tone(1175,.09,'sine',.1,.06); }
+  reveal: function(){ tone(880,.07,'sine',.12); tone(1175,.09,'sine',.1,.06); },
+  empty: function(){ tone(260,.12,'square',.05); }
 };
 function setSound(on){
   soundOn = on; if (on) initAudio();
   $('#soundBtn').textContent = on ? '소리 끄기' : '소리 켜기';
 }
 
-/* ---------- 버튼 클릭: 키보드가 만든 중복 클릭만 거른다 ---------- */
-// 버튼에 포커스가 남은 채 Enter·Space를 누르면 브라우저가 클릭을 한 번 더 만든다(detail 0).
-// 게임은 그 키를 keydown에서 이미 처리했으므로, 방금 처리한 키 직후의 detail 0 클릭만 무시한다.
+/* 버튼 클릭: 키보드가 만든 중복 클릭(detail 0)만 거른다 */
 function onClick(el, fn){
   el.addEventListener('click', function(e){
     if (e.detail === 0 && performance.now() - state.lastKeyAt < 600) return;
@@ -490,8 +516,10 @@ function onClick(el, fn){
   });
 }
 
-/* ---------- 살펴봇 ---------- */
-var MOODS = ['normal','happy','oops','alert'];
+/* =========================================================
+   화면 요소
+   ========================================================= */
+var MOODS = ['normal','happy','oops','alert','sleep'];
 function mood(m){
   MOODS.forEach(function(k){ var g = document.querySelector('#bot .m-' + k); if (g) g.style.display = (k === m) ? '' : 'none'; });
 }
@@ -499,11 +527,13 @@ function botCopy(){ return $('#bot').innerHTML; }
 function say(html, radar){
   var b = $('#bubble');
   b.innerHTML = '<span class="tag">참고용</span>' + (radar ? '<span class="radar">데이터 레이더</span>' : '') + html;
-  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); // 말이 바뀔 때 시선을 끄는 짧은 움직임
+  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+}
+function sayPlain(html){
+  var b = $('#bubble'); b.innerHTML = html; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
 }
 $('#titleBot').innerHTML = botCopy();
 
-/* ---------- 규칙판 ---------- */
 function renderRules(newKey){
   var html = '';
   BASE_RULES.concat(state.rules).forEach(function(r){
@@ -511,9 +541,28 @@ function renderRules(newKey){
   });
   var list = $('#ruleList'); list.innerHTML = html; list.scrollTop = list.scrollHeight;
 }
+function freeTokens(){ var st = curStage(); return !st || st.tutorial || state.easy; } // 연습·쉬운 모드는 조사권이 줄지 않음
+function lastStage(){ return state.easy ? 3 : STAGE_META.length - 1; }               // 쉬운 모드는 실전 단계 생략
+function renderTokens(){
+  var st = curStage(), el = $('#tokens');
+  if (!st || st.tutorial) { el.innerHTML = '조사권 <span style="font-weight:600;color:#56617a">연습 중 무제한</span>'; return; }
+  if (state.easy) { el.innerHTML = '조사권 <span style="font-weight:600;color:#56617a">쉬운 모드 무제한</span>'; return; }
+  var h = '조사권 ';
+  for (var i = 0; i < st.tokens; i++) h += '<span class="tk' + (i < state.tokens ? '' : ' used') + '"></span>';
+  el.innerHTML = h;
+}
+var GMAX = 6;
+function renderGauges(bumpKey){
+  ['tax','chance','delay'].forEach(function(k){
+    var el = document.querySelector('.gauge[data-g="' + k + '"]');
+    el.querySelector('.gf').style.width = Math.min(100, state.g[k] / GMAX * 100) + '%';
+    el.querySelector('.gn').textContent = state.g[k];
+    el.classList.remove('bump');
+    if (k === bumpKey) { void el.offsetWidth; el.classList.add('bump'); }
+  });
+}
 
-/* ---------- 접근성: 가려진 영역은 inert ---------- */
-var GAME_PARTS = ['#top','#rules','#cardArea','#botPanel','#controls'];
+var GAME_PARTS = ['#top','#town','#rules','#cardArea','#botPanel','#controls'];
 function updateInert(){
   var modalOn = $('#modal').classList.contains('on');
   var titleOn = $('#title').style.display !== 'none';
@@ -521,7 +570,6 @@ function updateInert(){
   $('#title').inert = modalOn;
 }
 
-/* ---------- 모달 ---------- */
 function openModal(html, cb, kind){
   $('#modalBox').innerHTML = html; $('#modal').classList.add('on');
   state.modalCb = cb || null; state.modalAt = performance.now(); state.modalKind = kind || '';
@@ -531,93 +579,118 @@ function openModal(html, cb, kind){
 }
 function closeModal(){
   if (!$('#modal').classList.contains('on')) return;
-  if (performance.now() - state.modalAt < 250) return; // 키를 빠르게 두 번 눌러 바로 닫히는 것 방지
+  if (performance.now() - state.modalAt < 250) return;
   $('#modal').classList.remove('on'); updateInert();
   var cb = state.modalCb; state.modalCb = null; state.modalKind = '';
   if (cb) cb();
 }
+function closeModalThen(fn){ state.modalCb = fn; state.modalAt = 0; closeModal(); }
 
-/* ---------- 토스트 ---------- */
 var toastTimer = null;
 function toast(text, kind){
   var t = $('#toast'); t.textContent = text; t.className = 'show ' + (kind || '');
-  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.className = ''; }, 900);
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.className = ''; }, 1000);
 }
 
-/* ---------- 카드 표시 ---------- */
-function curStage(){ return STAGES[state.si]; }
-function dirLabel(d){
-  if (d === 'L') return '← 확인 필요'; if (d === 'R') return '심사 진행 →'; return '↑ 수의계약';
-}
+/* =========================================================
+   카드
+   ========================================================= */
+function curStage(){ return STAGE_META[state.si]; }
+function curDeck(){ return state.decks[state.si]; }
+function dirLabel(d){ if (d === 'L') return '← 확인 필요'; if (d === 'R') return '심사 진행 →'; return '↑ 수의계약'; }
 var MAG = '<svg class="mag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M15 15l6 6"/></svg>';
 
-function renderCard(){
+function slotHTML(c, i){
+  var s = c.slots[i], open = state.opened[i];
+  if (open) return '<div class="row slot open" data-s="' + i + '"><span class="k">' + MAG + s.label + '</span><span class="v">' + s.value + '</span></div>';
+  var cost = freeTokens() ? '' : ' (조사권 1)';
+  var locked = !freeTokens() && state.tokens <= 0;
+  return '<div class="row slot' + (c.requireReveal ? ' need' : '') + (locked ? ' locked' : '') + '" role="button" data-s="' + i + '"><span class="k">' + MAG + s.label + '</span><span class="v">' + (locked ? '조사권 없음' : '눌러서 확인' + cost) + '</span></div>';
+}
+function renderCard(animate){
   var c = state.card, st = curStage();
   var h = '<div class="ctop"><div class="cname">' + c.name + '</div><span class="virtual">가상 기업</span></div><div class="badges" id="badges">';
   c.badges.forEach(function(b){ h += '<span class="badge b-' + b[1] + '">' + b[0] + '</span>'; });
   h += '</div><div class="item">품목 <b>' + c.item + '</b></div>';
   c.rows.forEach(function(r, i){ h += '<div class="row" data-i="' + i + '"><span class="k">' + r[0] + '</span><span class="v">' + r[1] + '</span></div>'; });
-  if (c.hidden) {
-    h += '<div class="row hidden-row' + (c.requireReveal ? ' need' : '') + '" id="hiddenRow" role="button" tabindex="-1" data-i="h"><span class="k">' + MAG + '숨은 정보</span><span class="v">눌러서 확인</span></div>';
-  }
+  (c.slots || []).forEach(function(s, i){ h += slotHTML(c, i); });
   $('#cardBody').innerHTML = h;
-  var hr = $('#hiddenRow'); if (hr) hr.addEventListener('click', reveal);
-  var target = c.bot.row === -1 ? $('#badges') : (c.bot.row === 'h' ? hr : document.querySelector('#cardBody .row[data-i="' + c.bot.row + '"]'));
-  if (target) target.classList.add('hl');
+  document.querySelectorAll('#cardBody .slot').forEach(function(el){ el.addEventListener('click', function(){ reveal(+el.getAttribute('data-s')); }); });
+  if (c.bot) {
+    var p = c.bot.point, target = null;
+    if (p === 'badge') target = $('#badges');
+    else if (/^row\d$/.test(p)) target = document.querySelector('#cardBody .row[data-i="' + p.slice(3) + '"]');
+    else if (/^slot\d$/.test(p)) target = document.querySelector('#cardBody .slot[data-s="' + p.slice(4) + '"]');
+    if (target) target.classList.add('hl');
+  }
   $('#btnL').innerHTML = '← 확인 필요<small>' + st.leftSub + '</small>';
   $('#controls').className = st.up ? 'upmode' : '';
-  $('#tutorialTip').textContent = c.tip || '';
-  var cardEl = $('#card'); cardEl.classList.remove('shake'); cardEl.style.transition = 'none'; cardEl.style.opacity = '0';
-  cardEl.style.transform = 'translateY(30px) scale(.96)';
-  requestAnimationFrame(function(){ requestAnimationFrame(function(){
-    if (state.card !== c || state.busy) return; // 등장 중 이미 판정했으면 되살리지 않음
-    cardEl.style.transition = ''; cardEl.style.opacity = '1'; cardEl.style.transform = '';
-  }); });
-  setHints(0, 0);
+  if (animate) {
+    $('#tutorialTip').textContent = (state.easy && c.tipEasy) || c.tip || '';
+    var cardEl = $('#card'); cardEl.classList.remove('shake'); cardEl.style.transition = 'none'; cardEl.style.opacity = '0';
+    cardEl.style.transform = 'translateY(30px) scale(.96)';
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      if (state.card !== c || state.busy) return;
+      cardEl.style.transition = ''; cardEl.style.opacity = '1'; cardEl.style.transform = '';
+    }); });
+    setHints(0, 0);
+  }
 }
 
-function reveal(){
-  if (state.revealed || state.busy || !state.card || !state.card.hidden) return;
-  state.revealed = true;
-  var hr = $('#hiddenRow');
-  hr.classList.remove('need'); hr.classList.add('open');
-  hr.innerHTML = '<span class="k">' + MAG + state.card.hidden[0] + '</span><span class="v">' + state.card.hidden[1] + '</span>';
-  if (state.card.tipAfter) $('#tutorialTip').textContent = state.card.tipAfter;
+function reveal(i){
+  var c = state.card, st = curStage();
+  if (state.busy || !c || !c.slots || !c.slots[i] || state.opened[i]) return;
+  if (!freeTokens()) {
+    if (state.tokens <= 0) { SFX.empty(); toast('조사권을 다 썼어요. 보이는 정보로 판단하세요', 'bad'); return; }
+    state.tokens--; renderTokens();
+  }
+  if (!st.tutorial) state.tokensUsed++;
+  state.opened[i] = true;
+  if (c.tipAfter) $('#tutorialTip').textContent = c.tipAfter;
+  renderCard(false);
   SFX.reveal();
+}
+function nextClosedSlot(){
+  var c = state.card; if (!c || !c.slots) return -1;
+  for (var i = 0; i < c.slots.length; i++) if (!state.opened[i]) return i;
+  return -1;
 }
 
 function showCard(){
-  var st = curStage(), c = st.cards[state.ci];
-  state.card = c; state.revealed = false; state.busy = true;
-  $('#progress').textContent = st.tutorial ? '연습 ' + (state.ci + 1) + '/' + st.cards.length : (state.ci + 1) + '/' + st.cards.length;
+  var st = curStage(), deck = curDeck(), c = deck[state.ci];
+  state.card = c; state.opened = {}; state.busy = true;
+  $('#progress').textContent = st.tutorial ? '연습 ' + (state.ci + 1) + '/' + deck.length : (state.ci + 1) + '/' + deck.length;
   var go = function(){
     state.busy = false;
-    renderCard();
+    renderCard(true);
     var banner = '';
     if (c.sprout && st.id === 3) banner = '1단계에서 만난 새싹로봇연구소가 돌아왔어요!' + (state.sprout1 === 'L' ? ' (그때 확인 필요로 보냈던 기업)' : '');
     if (c.repeat) banner = c.repeat;
     $('#banner').textContent = banner;
-    mood(c.bot.dir === 'L' ? 'alert' : 'normal');
-    say(c.bot.say, c.radar);
+    if (c.bot) { $('#bot').classList.remove('away'); mood(c.bot.dir === 'L' ? 'alert' : 'normal'); say(c.bot.say, c.bot.radar); }
+    else { $('#bot').classList.add('away'); mood('sleep'); sayPlain('살펴봇은 휴가 중이에요. <b>실전 심사는 혼자 판단</b>해 보세요!'); }
     state.shownAt = performance.now();
     if (!st.tutorial && state.firstScoredAt === null) state.firstScoredAt = state.shownAt;
   };
   if (c.rule) {
-    state.rules.push({date:c.rule.date, text:c.rule.text, key:c.rule.key});
-    $('#dateText').textContent = c.rule.date === '현행 제도' ? st.date : c.rule.date;
+    var r = RULES[c.rule];
+    state.rules.push({date:r.date, text:r.text, key:r.key});
+    $('#dateText').textContent = r.date === '현행 제도' ? st.date : r.date;
     var cal = $('#calendar'); cal.classList.remove('flip'); void cal.offsetWidth; cal.classList.add('flip');
-    renderRules(c.rule.key); SFX.rule();
-    openModal('<span class="newrule">' + c.rule.label + ' · ' + c.rule.date + '</span><h2>' + c.rule.key + '</h2>' + c.rule.body +
-      '<div class="src">출처: ' + c.rule.src + '</div><button class="primary" type="button">알겠어요</button>', go, 'rule');
+    renderRules(r.key); SFX.rule();
+    openModal('<span class="newrule">' + r.label + ' · ' + r.date + '</span><h2>' + r.key + '</h2>' + r.body +
+      '<div class="src">출처: ' + SRC[r.src] + '</div><button class="primary" type="button">알겠어요</button>', go, 'rule');
   } else go();
 }
 
-/* ---------- 판정 ---------- */
+/* =========================================================
+   판정
+   ========================================================= */
 function setHints(dx, dy){
   var T = 110;
   $('#hintL').style.opacity = Math.min(1, Math.max(0, -dx / T));
   $('#hintR').style.opacity = Math.min(1, Math.max(0, dx / T));
-  $('#hintU').style.opacity = curStage().up ? Math.min(1, Math.max(0, -dy / T)) : 0;
+  $('#hintU').style.opacity = curStage() && curStage().up ? Math.min(1, Math.max(0, -dy / T)) : 0;
 }
 function clearDrag(){
   var d = state.drag; if (!d) return;
@@ -628,35 +701,53 @@ function shakeCard(){
   var cardEl = $('#card'); cardEl.style.transform = ''; setHints(0, 0);
   cardEl.classList.remove('shake'); void cardEl.offsetWidth; cardEl.classList.add('shake');
 }
+function isOpportunity(c){
+  return c.kind === 'lowrecord' || c.badges.some(function(b){ return ['start','women','innov','excel'].indexOf(b[1]) >= 0; });
+}
+// 오답의 종류에 따라 동네 계기판 중 하나가 오른다
+function gaugeFor(c, dir){
+  if (c.ans === 'L') return 'tax';
+  if (c.ans === 'R') return dir === 'U' ? 'tax' : (isOpportunity(c) ? 'chance' : 'delay');
+  return dir === 'R' ? 'delay' : 'chance';
+}
+var FALLBACK_NEWS = {
+  tax: '부실한 업체가 낙찰 → 납품이 늦어져 다시 사느라 세금이 들었어요',
+  chance: '멀쩡한 기업이 보류 → 좋은 제품을 들일 기회를 놓쳤어요',
+  delay: '괜한 확인 → 필요한 물건이 동네에 늦게 도착했어요'
+};
 
 function decide(dir){
   var st = curStage(), c = state.card;
   if (state.busy || !c || $('#modal').classList.contains('on')) return;
   if (dir === 'U' && !st.up) return;
   clearDrag();
-  if (c.requireReveal && !state.revealed) {
-    shakeCard(); $('#tutorialTip').textContent = '점선 칸(숨은 정보)을 먼저 눌러 보세요!';
-    return;
-  }
+  if (c.requireReveal && !state.opened[0]) { shakeCard(); $('#tutorialTip').textContent = '점선 칸(숨은 정보)을 먼저 눌러 보세요!'; return; }
   var correct = dir === c.ans;
-  if (st.tutorial && !correct) {
-    shakeCard(); SFX.bad(); mood('oops'); say('앗, 반대쪽이에요. 다시 해 볼까요? ' + c.tip);
-    return;
-  }
+  if (st.tutorial && !correct) { shakeCard(); SFX.bad(); mood('oops'); say('앗, 반대쪽이에요. 다시 해 볼까요? ' + c.tip); return; }
   state.busy = true;
   var now = performance.now(), dt = now - state.shownAt;
-  var gained = 0, corrected = false, checked = false;
+  var gained = 0, corrected = false, gk = null, newsText = '';
+  var decisiveSlots = (c.slots || []).map(function(s, i){ return s.decisive ? i : -1; }).filter(function(i){ return i >= 0; });
+  var sawDecisive = decisiveSlots.some(function(i){ return state.opened[i]; });
   if (!st.tutorial) {
     if (correct) {
       gained = 100;
-      // 빠르기가 아니라 '근거를 확인하고 맞힌 것'에 보너스를 준다(게임 메시지와 일치)
-      if (c.hidden && state.revealed) { gained += 50; checked = true; }
-      if (!c.bot.ok) { gained += 50; corrected = true; }
+      if (c.bot && !c.bot.ok) { gained += 50; corrected = true; }
       if (state.firstCorrectAt === null) state.firstCorrectAt = now;
+      newsText = c.outcome && c.outcome.good;
+      if (newsText) state.news.push({stage:st.id, kind:'good', text:newsText});
+    } else {
+      gk = gaugeFor(c, dir); state.g[gk]++;
+      newsText = (c.outcome && c.outcome[dir]) || FALLBACK_NEWS[gk];
+      // 1단계에서 통과시켰던 새싹로봇연구소라면 '또 보류'가 아니라 그냥 '보류'
+      if (c.sprout && st.id === 3 && dir === 'L' && state.sprout1 !== 'L') newsText = newsText.replace('또 보류', '보류');
+      state.news.push({stage:st.id, kind:gk, text:newsText});
+      renderGauges(gk);
     }
     state.score += gained;
-    state.log.push({stage:st.id, name:c.name, dir:dir, ans:c.ans, correct:correct, botOk:c.bot.ok, habit:c.bot.habit || null,
-      followedWrongBot: !c.bot.ok && dir === c.bot.dir, hasHidden: !!c.hidden, revealed: state.revealed, dt:dt, sprout: !!c.sprout});
+    state.log.push({stage:st.id, name:c.name, dir:dir, ans:c.ans, correct:correct, hasBot:!!c.bot, botOk:c.bot ? c.bot.ok : null,
+      habit:(c.bot && c.bot.habit) || null, followedWrongBot: !!(c.bot && !c.bot.ok && dir === c.bot.dir),
+      slots:(c.slots || []).length, opened:Object.keys(state.opened).length, needed:decisiveSlots.length > 0, sawDecisive:sawDecisive, dt:dt, sprout:!!c.sprout, gauge:gk});
     if (c.sprout && st.id === 1) state.sprout1 = dir;
     $('#score').textContent = state.score + '점';
   }
@@ -672,37 +763,60 @@ function decide(dir){
         SFX.combo(); mood('oops'); say('앗, 제 버릇 <b>‘' + hb[0] + '’</b>이 나왔네요. 역시 결정은 심사관님!');
         toast('살펴봇의 버릇을 잡았어요! +' + gained, 'good');
       } else {
-        SFX.ok(); mood('happy'); say(st.tutorial ? '좋아요! ' + c.why : '정답이에요!');
-        toast(st.tutorial ? '좋아요!' : (checked ? '근거 확인하고 정답! +' : '정답 +') + gained, 'good');
+        SFX.ok();
+        if (c.bot) { mood('happy'); say(st.tutorial ? '좋아요! ' + c.why : '정답이에요!'); }
+        toast(st.tutorial ? '좋아요!' : '정답 +' + gained, 'good');
       }
-      setTimeout(next, st.tutorial ? 1400 : (corrected ? 1500 : 650)); // 버릇을 잡았을 때는 살펴봇 말을 읽을 시간
+      setTimeout(next, st.tutorial ? 1400 : (corrected ? 1500 : 650));
     } else {
-      SFX.bad(); mood('oops');
+      SFX.bad();
       var habitLine = '';
-      if (!c.bot.ok && dir === c.bot.dir) {
-        var h2 = HABITS[c.bot.habit];
-        say('제 말만 믿으면 안 돼요. 참고만 해 주세요!');
-        habitLine = '<div class="habit">살펴봇의 버릇 <b>‘' + h2[0] + '’</b>: ' + h2[1] + '</div>';
-      } else say(c.bot.ok ? '음, 제가 짚은 근거를 한 번 더 봐 주세요.' : '이번엔 저도 헷갈렸어요.');
-      var peek = (c.hidden && !state.revealed) ? '<div class="peek">' + MAG + '숨은 정보 — ' + c.hidden[0] + ': <b>' + c.hidden[1] + '</b></div>' : '';
+      if (c.bot) {
+        mood('oops');
+        if (!c.bot.ok && dir === c.bot.dir) {
+          var h2 = HABITS[c.bot.habit];
+          say('제 말만 믿으면 안 돼요. 참고만 해 주세요!');
+          habitLine = '<div class="habit">살펴봇의 버릇 <b>‘' + h2[0] + '’</b>: ' + h2[1] + '</div>';
+        } else say(c.bot.ok ? '음, 제가 짚은 근거를 한 번 더 봐 주세요.' : '이번엔 저도 헷갈렸어요.');
+      }
+      var peek = '';
+      (c.slots || []).forEach(function(s, i){ if (!state.opened[i] && s.decisive) peek += '<div class="peek">' + MAG + '숨은 칸 — ' + s.label + ': <b>' + s.value + '</b></div>'; });
+      // 계기판은 처음 틀렸을 때 한 번만 설명한다(처음부터 규칙을 몰아 주지 않기)
+      var gaugeIntro = '';
+      if (!state.gaugeExplained) {
+        state.gaugeExplained = true;
+        gaugeIntro = '<p style="font-size:15px;color:#56617a">틀리면 왼쪽 <b>우리 동네 계기판</b>이 올라가요. 수상한 곳을 통과시키면 세금 낭비, 멀쩡한 곳을 막으면 기회 손실·처리 지연.</p>';
+      }
       openModal('<h2>아쉬워요</h2><p>정답은 <span class="ans">' + dirLabel(c.ans) + '</span></p><p>' + c.why + '</p>' + peek + habitLine +
-        (c.src ? '<div class="src">근거: ' + c.src + '</div>' : '') + '<button class="primary" type="button">다음 카드</button>', next, 'wrong');
+        '<div class="news"><span class="nt ' + gk + '">' + GAUGE_NAME[gk] + ' ▲</span><span>' + newsText + '</span></div>' + gaugeIntro +
+        (SRC[c.src] ? '<div class="src">근거: ' + SRC[c.src] + '</div>' : '') + '<button class="primary" type="button">다음 카드</button>', next, 'wrong');
     }
   }, 300);
 }
 
 function next(){
-  var st = curStage();
+  var st = curStage(), deck = curDeck();
   state.ci++;
-  if (state.ci < st.cards.length) return showCard();
+  if (state.ci < deck.length) return showCard();
   if (st.tutorial) return goStage(state.si + 1);
+  // 단계 끝: 남은 조사권 점수 + 다음 날 동네 소식
+  var bonus = state.easy ? 0 : state.tokens * 15; state.score += bonus; $('#score').textContent = state.score + '점';
   var L = state.log.filter(function(x){ return x.stage === st.id; });
   var ok = L.filter(function(x){ return x.correct; }).length;
-  var wrongBot = L.filter(function(x){ return !x.botOk; }).length;
-  var fixed = L.filter(function(x){ return !x.botOk && x.correct; }).length;
-  var last = state.si === STAGES.length - 1;
-  openModal('<h2>' + st.name + ' 끝!</h2><p>정답 <b>' + ok + '/' + L.length + '</b> · 살펴봇의 버릇 잡기 <b>' + fixed + '/' + wrongBot + '</b></p>' +
-    (last ? '' : '<p>다음 단계에서는 달력이 넘어가며 규칙이 바뀌어요.</p>') +
+  var wrongBot = L.filter(function(x){ return x.hasBot && !x.botOk; }).length;
+  var fixed = L.filter(function(x){ return x.hasBot && !x.botOk && x.correct; }).length;
+  var N = state.news.filter(function(n){ return n.stage === st.id; });
+  var bad = N.filter(function(n){ return n.kind !== 'good'; }), good = N.filter(function(n){ return n.kind === 'good'; });
+  var show = bad.slice(0, 3).concat(good.slice(0, Math.max(1, 3 - Math.min(bad.length, 3))));
+  var newsHTML = show.map(function(n){
+    var lbl = n.kind === 'good' ? '좋은 소식' : GAUGE_NAME[n.kind] + ' ▲';
+    return '<div class="news"><span class="nt ' + n.kind + '">' + lbl + '</span><span>' + n.text + '</span></div>';
+  }).join('');
+  var last = state.si === lastStage();
+  openModal('<h2>' + st.name + ' 끝! · 다음 날 동네 소식</h2>' + newsHTML +
+    '<p style="font-size:16px">정답 <b>' + ok + '/' + L.length + '</b>' + (wrongBot ? ' · 살펴봇의 버릇 잡기 <b>' + fixed + '/' + wrongBot + '</b>' : '') +
+    (state.easy ? '' : ' · 남은 조사권 ' + state.tokens + '장 → <b>+' + bonus + '점</b>') + '</p>' +
+    '<p style="font-size:14px;color:#56617a">동네 소식은 게임 속 가상 이야기예요.</p>' +
     '<button class="primary" type="button">' + (last ? '결과 보기' : '다음 단계') + '</button>', function(){
       if (last) showResult(); else goStage(state.si + 1);
     }, 'stageEnd');
@@ -710,18 +824,23 @@ function next(){
 
 function goStage(i){
   state.si = i; state.ci = 0; var st = curStage();
+  if (!st.tutorial && !curDeck().length) return i >= lastStage() ? showResult() : goStage(i + 1); // 뽑힌 카드가 없으면 건너뜀
+  state.tokens = (st.tutorial || state.easy) ? 99 : st.tokens; if (!st.tutorial && !state.easy) state.tokensTotal += st.tokens;
+  renderTokens();
   $('#stageName').textContent = st.name; $('#dateText').textContent = st.date;
   $('#controls').className = st.up ? 'upmode' : '';
-  $('#banner').textContent = '';
+  $('#banner').textContent = ''; $('#tutorialTip').textContent = '';
   renderRules(null);
-  if (st.intro) openModal('<h2>' + st.intro.title + '</h2>' + st.intro.body + '<button class="primary" type="button">시작</button>', showCard, 'intro');
+  if (st.intro) openModal('<h2>' + (state.skipTutorial ? '' : '연습 끝! ') + st.intro.title + '</h2>' + (state.easy ? st.intro.easyBody : st.intro.body) + '<button class="primary" type="button">시작</button>', showCard, 'intro');
   else showCard();
 }
 
-/* ---------- 입력: 드래그 ---------- */
+/* =========================================================
+   입력
+   ========================================================= */
 var cardEl = $('#card');
 cardEl.addEventListener('pointerdown', function(e){
-  if (state.busy || state.drag || e.button !== 0 || e.target.closest('#hiddenRow')) return;
+  if (state.busy || state.drag || e.button !== 0 || e.target.closest('.slot')) return;
   try { cardEl.setPointerCapture(e.pointerId); } catch(err){}
   state.drag = {x:e.clientX, y:e.clientY, id:e.pointerId, dx:0, dy:0, card:state.card};
   cardEl.classList.add('dragging');
@@ -750,7 +869,6 @@ cardEl.addEventListener('pointercancel', function(e){
 });
 cardEl.addEventListener('contextmenu', function(e){ e.preventDefault(); });
 
-/* ---------- 입력: 버튼·키보드 ---------- */
 onClick($('#btnL'), function(){ decide('L'); });
 onClick($('#btnR'), function(){ decide('R'); });
 onClick($('#btnU'), function(){ decide('U'); });
@@ -759,12 +877,14 @@ onClick($('#soundBtn'), function(){ setSound(!soundOn); });
 document.addEventListener('keydown', function(e){
   if ($('#modal').classList.contains('on')) {
     var k = e.key;
+    // 모달 안의 보조 버튼(결과 카드 이미지, 처음 화면 등)에 포커스가 있으면 그 버튼의 기본 동작에 맡긴다
+    var ae = document.activeElement;
+    if (k !== 'Escape' && ae && ae.closest && ae.closest('#modalBox') && ae.matches('button,a') && !ae.classList.contains('primary')) return;
     if (k === 'Enter' || k === ' ' || k === 'Escape') {
       e.preventDefault(); state.lastKeyAt = performance.now();
       if (e.repeat) return;
-      // 결과 화면은 Space로는 닫히지 않고, Enter도 2초가 지난 뒤에만 닫힘(테스트 기록 보호)
       if (state.modalKind === 'result' && (k !== 'Enter' || performance.now() - state.modalAt < 2000)) return;
-      if (k === 'Escape' && state.modalKind !== 'help') return; // Esc는 도움말만 닫음
+      if (k === 'Escape' && state.modalKind !== 'help') return;
       closeModal();
     }
     return;
@@ -775,74 +895,94 @@ document.addEventListener('keydown', function(e){
   if (e.key === 'ArrowLeft') decide('L');
   else if (e.key === 'ArrowRight') decide('R');
   else if (e.key === 'ArrowUp') decide('U');
-  else if (e.key === ' ' || e.key === 'r' || e.key === 'R' || e.key === 'ㄱ') reveal();
-  else if (e.key === 'Enter') { /* 게임 중 Enter는 쓰지 않음 */ }
+  else if (e.key === '1') reveal(0);
+  else if (e.key === '2') reveal(1);
+  else if (e.key === ' ') { var s = nextClosedSlot(); if (s >= 0) reveal(s); }
   else used = false;
   if (used) { e.preventDefault(); state.lastKeyAt = performance.now(); }
 });
 
-/* ---------- 결과 ---------- */
+/* =========================================================
+   결과
+   ========================================================= */
+var DEX_KEY = 'salpyeobot-habit-dex-v1';
+function loadDex(){ try { return JSON.parse(localStorage.getItem(DEX_KEY) || '{}') || {}; } catch(e){ return {}; } }
+function saveDex(d){ try { localStorage.setItem(DEX_KEY, JSON.stringify(d)); } catch(e){} }
 function pct(a, b){ return b ? Math.round(a / b * 100) : 0; }
+
 function showResult(){
-  mood('happy'); say('수고했어요, 심사관님!');
+  mood('happy'); $('#bot').classList.remove('away'); say('수고했어요, 심사관님!');
   var L = state.log, n = L.length;
   var me = L.filter(function(x){ return x.correct; }).length;
-  var bot = L.filter(function(x){ return x.botOk; }).length;
-  var wrongBot = L.filter(function(x){ return !x.botOk; }).length;
-  var fixed = L.filter(function(x){ return !x.botOk && x.correct; }).length;
+  var B = L.filter(function(x){ return x.hasBot; });
+  var botRight = B.filter(function(x){ return x.botOk; }).length;
+  var meWithBot = B.filter(function(x){ return x.correct; }).length;
+  var wrongBot = B.filter(function(x){ return !x.botOk; }).length;
+  var fixed = B.filter(function(x){ return !x.botOk && x.correct; }).length;
   var followed = L.filter(function(x){ return x.followedWrongBot; }).length;
-  var hid = L.filter(function(x){ return x.hasHidden; }), rev = hid.filter(function(x){ return x.revealed; }).length;
-  var sprouts = L.filter(function(x){ return x.sprout; }), sproutOk = sprouts.filter(function(x){ return x.correct; }).length;
+  var solo = L.filter(function(x){ return x.stage === 4; }), soloOk = solo.filter(function(x){ return x.correct; }).length;
   var avg = n ? L.reduce(function(a, x){ return a + x.dt; }, 0) / n : 0;
-  var acc = n ? me / n : 0;
+  var g = state.g, errs = g.tax + g.chance + g.delay;
   var caught = {}, missed = {};
   L.forEach(function(x){ if (!x.habit) return; if (x.correct) caught[x.habit] = 1; else missed[x.habit] = 1; });
-  Object.keys(caught).forEach(function(k){ if (missed[k]) delete caught[k]; });
-  var name = function(k){ return '‘' + HABITS[k][0] + '’'; };
-  var caughtList = Object.keys(caught).map(name).join(', ') || '없음';
-  var missedList = Object.keys(missed).map(name).join(', ');
+  var dex = loadDex(); Object.keys(caught).forEach(function(k){ dex[k] = 1; });
+  if (!state.auto) saveDex(dex); // 자동 점검 판은 도감에 남기지 않음
+  var allKeys = Object.keys(HABITS);
+  var nm = function(k){ return '‘' + HABITS[k][0] + '’'; };
+  var notYet = allKeys.filter(function(k){ return !dex[k]; });
 
+  var top = ['tax','chance','delay'].reduce(function(a, k){ return g[k] > g[a] ? k : a; }, 'tax');
   var type;
-  if (followed >= 3) type = ['AI 짝꿍형', '살펴봇을 많이 믿었어요. 다음엔 근거를 한 번 더 눌러 봐요. AI는 참고, 판단은 사람!'];
-  else if (sprouts.length && sproutOk === sprouts.length && acc >= 0.8) type = ['기회 발굴형', '실적이 적은 새싹 기업에도 공정하게 기회를 줬어요. 그 기업이 혁신제품이 되어 돌아왔죠.'];
-  else if (hid.length && rev / hid.length >= 0.7 && acc >= 0.8) type = ['꼼꼼 검증형', '숨은 정보까지 확인하고 판단했어요. 근거를 보는 눈이 정확해요.'];
-  else if (acc >= 0.8) type = ['균형 심사형', '의심할 때와 기회를 줄 때를 잘 가렸어요. 바뀐 규칙에도 잘 적응했어요.'];
-  else type = ['새내기 심사관', '규칙이 바뀌면 정답도 바뀌어요. 한 판 더 하면 금방 늘어요!'];
-  state.lastResult = {type:type, acc:pct(me, n), botAcc:pct(bot, n), fixed:fixed, wrongBot:wrongBot, rev:rev, hid:hid.length, caught:caughtList, score:state.score};
+  if (followed >= 3) type = ['AI 짝꿍형', '살펴봇을 많이 믿었어요. 근거를 한 번 더 확인해 봐요. AI는 참고, 판단은 사람!'];
+  else if (errs <= 2) type = ['균형 심사관', '의심할 때와 기회를 줄 때를 잘 가렸어요. 동네 계기판이 거의 그대로예요.'];
+  else if (top === 'tax') type = ['성급 통과형', state.easy ? '수상한 신호를 몇 번 놓쳐 동네 세금이 샜어요. 점선 칸을 열어 확인해 보세요.' : '수상한 신호를 몇 번 놓쳐 동네 세금이 샜어요. 꼭 필요한 곳엔 조사권을 쓰세요.'];
+  else if (top === 'chance') type = ['깐깐 배제형', '멀쩡한 새싹·여성 기업까지 막았어요. 실적이 적은 건 의심 사유가 아니에요.'];
+  else type = ['신중 지연형', '확인을 자주 눌러 처리가 늦어졌어요. 단서가 없으면 과감히 진행해도 돼요.'];
+  state.lastResult = {type:type, acc:pct(me, n), g:{tax:g.tax, chance:g.chance, delay:g.delay}, fixed:fixed, wrongBot:wrongBot, easy:state.easy,
+    caught:Object.keys(caught).map(nm).join(', ') || '없음', score:state.score, seed:state.seed};
 
   function bar(label, v, color){ return '<div class="bar"><span class="lbl">' + label + '</span><span class="trk"><span class="fill" style="width:' + v + '%;background:' + color + '"></span></span><b>' + v + '%</b></div>'; }
-  // 살펴봇의 판단은 미리 짜 둔 시나리오이므로 '실제 AI 성능'처럼 보이지 않게 표기한다
-  var msg = (me >= bot
-    ? '살펴봇 말대로만 했다면 ' + bot + '/' + n + ', 당신의 판정은 ' + me + '/' + n + '. <b>AI는 근거를, 결정은 사람이.</b>'
-    : '이번엔 살펴봇 말대로 한 쪽이 더 많이 맞았어요(' + bot + '/' + n + ' vs ' + me + '/' + n + '). 숨은 정보를 열어 보면 역전할 수 있어요!') +
-    ' <span style="font-size:14px;color:#56617a">(게임 속 시나리오 기준, 실제 AI 성능 비교가 아니에요)</span>';
-  var html = '<h2>심사 결과</h2>' +
-    '<div class="bars">' + bar('살펴봇 말대로', pct(bot, n), '#9fb2e6') + bar('나의 판정', pct(me, n), '#3d6df2') + '</div>' +
-    '<p style="font-size:16px;margin-top:2px">' + msg + '</p>' +
-    '<div class="typecard"><svg viewBox="0 0 200 220" width="70" height="77" aria-hidden="true">' + botCopy() + '</svg>' +
+  var gaugeHTML = ['tax','chance','delay'].map(function(k){
+    return '<div class="gauge" data-g="' + k + '"><span class="gl">' + GAUGE_NAME[k] + '</span><span class="gt"><span class="gf" style="width:' + Math.min(100, g[k] / GMAX * 100) + '%"></span></span><b class="gn">' + g[k] + '</b></div>';
+  }).join('');
+  var html = '<h2>심사 결과 · 심사 번호 ' + state.seed + (state.easy ? ' · 쉬운 모드' : '') + '</h2>' +
+    '<div class="typecard"><svg viewBox="0 0 200 220" width="64" height="70" aria-hidden="true">' + botCopy() + '</svg>' +
     '<div><div class="tn">' + type[0] + '</div><div class="tm">' + type[1] + '</div></div></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">' +
+      '<div><b style="font-size:15px">우리 동네 계기판</b>' + gaugeHTML + '</div>' +
+      '<div><b style="font-size:15px">살펴봇과 함께한 카드</b>' + bar('살펴봇 말대로', pct(botRight, B.length), '#9fb2e6') + bar('나의 판정', pct(meWithBot, B.length), '#3d6df2') +
+      '<div style="font-size:13px;color:#56617a">게임 속 시나리오 기준, 실제 AI 성능 비교가 아니에요</div></div>' +
+    '</div>' +
     '<div class="stats"><div class="stat"><div class="n">' + state.score + '</div><div class="l">점수</div></div>' +
     '<div class="stat"><div class="n">' + pct(me, n) + '%</div><div class="l">정확도</div></div>' +
-    '<div class="stat"><div class="n">' + fixed + '/' + wrongBot + '</div><div class="l">버릇 잡기</div></div>' +
-    '<div class="stat"><div class="n">' + rev + '/' + hid.length + '</div><div class="l">숨은 정보 확인</div></div></div>' +
-    '<div class="habits">잡아낸 살펴봇의 버릇: <b>' + caughtList + '</b>' + (missedList ? '<br>다음엔 이 버릇을 조심해요: ' + missedList : '') + '</div>' +
-    '<p style="font-size:15px;margin-top:8px">예고: 2027년 1월 1일부터 최근 1년간 2회 이상 입찰을 포기한 업체도 입찰보증금 대상이 될 예정이에요.<br>' +
-    '2025년 공공조달 238.5조원 중 중소기업이 149.5조원(62.7%). 공정한 심사는 모두의 일이에요. 불공정 행위는 <b>조달기업 불공정행위 신고센터</b>로.</p>' +
-    '<div class="src">출처: 조달청 보도자료(2026.6.26 공공조달 규모, 2026.7.13 입찰보증금 단계 강화) · 이 게임의 기업과 단서는 모두 가상입니다.</div>';
+    (state.easy
+      ? '<div class="stat"><div class="n">' + fixed + '/' + wrongBot + '</div><div class="l">버릇 잡기</div></div>' +
+        '<div class="stat"><div class="n">' + state.tokensUsed + '번</div><div class="l">숨은 칸 열기</div></div></div>'
+      : '<div class="stat"><div class="n">' + soloOk + '/' + solo.length + '</div><div class="l">실전(혼자) 정답</div></div>' +
+        '<div class="stat"><div class="n">' + state.tokensUsed + '/' + state.tokensTotal + '</div><div class="l">조사권 사용</div></div></div>') +
+    '<div class="habits">이번 판에 잡은 살펴봇의 버릇: <b>' + (Object.keys(caught).map(nm).join(', ') || '없음') + '</b> · 버릇 도감 <b>' + (allKeys.length - notYet.length) + '/' + allKeys.length + '</b>' +
+    (notYet.length ? '<br>아직 못 잡은 버릇이 <b>' + notYet.length + '개</b> 있어요. 판마다 카드가 달라지니 다음 판에서 찾아보세요!' : '<br>버릇 도감을 모두 채웠어요!') + '</div>' +
+    '<p style="font-size:14px;margin-top:6px">2025년 공공조달 238.5조원 중 중소기업이 149.5조원(62.7%). 공정한 심사는 모두의 일이에요. 불공정 행위는 <b>조달기업 불공정행위 신고센터</b>로.</p>' +
+    '<div class="src">출처: 조달청 보도자료(2026.6.26 공공조달 규모, 2026.7.13 입찰보증금 단계 강화) · 기업·단서·동네 소식은 모두 가상입니다.</div>';
   if (SHOW_TESTLOG) {
-    var stageAcc = [1,2,3].map(function(s){ var X = L.filter(function(x){ return x.stage === s; }); return s + '단계 ' + X.filter(function(x){ return x.correct; }).length + '/' + X.length; }).join(' · ');
+    var stageAcc = [1,2,3,4].map(function(s){ var X = L.filter(function(x){ return x.stage === s; }); return s + '단계 ' + X.filter(function(x){ return x.correct; }).length + '/' + X.length; }).join(' · ');
     var firstSec = (state.firstCorrectAt && state.firstScoredAt) ? ((state.firstCorrectAt - state.firstScoredAt) / 1000).toFixed(1) + '초' : '-';
     var total = Math.round((performance.now() - state.t0) / 1000);
+    var needed = L.filter(function(x){ return x.needed; }), saw = needed.filter(function(x){ return x.sawDecisive; }).length;
+    var wasted = L.filter(function(x){ return !x.needed && x.opened > 0; }).length;
     html += '<div class="testlog"><b>테스트 기록</b> · 첫 정답까지 ' + firstSec + ' · 총 ' + Math.floor(total / 60) + '분 ' + (total % 60) + '초 · ' + stageAcc +
-      ' · 살펴봇 오판 따라감 ' + followed + '회 · 카드당 ' + (avg / 1000).toFixed(1) + '초</div>';
+      ' · 결정적 칸 확인 ' + saw + '/' + needed.length + ' · 필요 없는 카드에 조사권 ' + wasted + '번 · 살펴봇 오판 따라감 ' + followed + '회 · 카드당 ' + (avg / 1000).toFixed(1) + '초</div>';
   }
-  html += '<button class="primary" type="button">처음으로</button><button class="secondary" id="saveCardBtn" type="button">결과 카드 저장(PNG)</button>';
+  html += '<button class="primary" type="button">새 카드로 한 판 더</button>' +
+    '<button class="secondary" id="saveCardBtn" type="button">결과 카드 이미지</button>' +
+    '<button class="secondary" id="homeBtn" type="button">처음 화면</button>';
   state.resultShown = true;
-  openModal(html, resetGame, 'result');
+  openModal(html, function(){ restart(true); }, 'result');
   onClick($('#saveCardBtn'), saveCard);
+  onClick($('#homeBtn'), function(){ closeModalThen(resetToTitle); });
 }
 
-/* ---------- 결과 카드 PNG (외부 이미지 없이 Canvas로만 그림) ---------- */
+/* 결과 카드 PNG(외부 이미지 없이 Canvas로만) */
 var FONT = '"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
 function rrect(ctx, x, y, w, h, r){
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
@@ -850,10 +990,7 @@ function rrect(ctx, x, y, w, h, r){
 }
 function wrapText(ctx, text, x, y, maxW, lh){
   var line = '', lines = [];
-  for (var i = 0; i < text.length; i++) {
-    var t = line + text[i];
-    if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = text[i]; } else line = t;
-  }
+  for (var i = 0; i < text.length; i++) { var t = line + text[i]; if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = text[i]; } else line = t; }
   if (line) lines.push(line);
   lines.forEach(function(l, k){ ctx.fillText(l, x, y + k * lh); });
   return y + lines.length * lh;
@@ -874,65 +1011,82 @@ function renderCardCanvas(){
   var r = state.lastResult, c = document.createElement('canvas');
   c.width = 1080; c.height = 1350;
   var ctx = c.getContext('2d');
-  var g = ctx.createLinearGradient(0, 0, 1080, 1350);
-  g.addColorStop(0, '#eaf0ff'); g.addColorStop(.55, '#f7f9ff'); g.addColorStop(1, '#e9f7f0');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, 1080, 1350);
-  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = '#1f2a44'; ctx.font = 'bold 72px ' + FONT; ctx.fillText('살펴봇 공정심사실', 540, 140);
-  ctx.fillStyle = '#2848b0'; ctx.font = 'bold 42px ' + FONT; ctx.fillText('AI는 근거를, 결정은 내가!', 540, 205);
-  drawBot(ctx, 540, 340, 1.5);
-  ctx.fillStyle = '#ebe5ff'; rrect(ctx, 90, 560, 900, 230, 36); ctx.fill();
-  ctx.fillStyle = '#5a3cc9'; ctx.font = 'bold 76px ' + FONT; ctx.fillText(r.type[0], 540, 660);
-  ctx.fillStyle = '#1f2a44'; ctx.font = '34px ' + FONT; wrapText(ctx, r.type[1], 540, 720, 820, 46);
-  var boxes = [[r.acc + '%', '정확도'], [r.fixed + '/' + r.wrongBot, '버릇 잡기'], [r.rev + '/' + r.hid, '숨은 정보 확인']];
-  boxes.forEach(function(b, i){
-    var x = 90 + i * 310;
-    ctx.fillStyle = '#ffffff'; rrect(ctx, x, 830, 280, 170, 28); ctx.fill();
-    ctx.fillStyle = '#1f2a44'; ctx.font = 'bold 64px ' + FONT; ctx.fillText(b[0], x + 140, 920);
-    ctx.fillStyle = '#56617a'; ctx.font = '30px ' + FONT; ctx.fillText(b[1], x + 140, 970);
+  var gr = ctx.createLinearGradient(0, 0, 1080, 1350);
+  gr.addColorStop(0, '#eaf0ff'); gr.addColorStop(.55, '#f7f9ff'); gr.addColorStop(1, '#e9f7f0');
+  ctx.fillStyle = gr; ctx.fillRect(0, 0, 1080, 1350);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#1f2a44'; ctx.font = 'bold 72px ' + FONT; ctx.fillText('살펴봇 공정심사실', 540, 130);
+  ctx.fillStyle = '#2848b0'; ctx.font = 'bold 40px ' + FONT; ctx.fillText('AI는 근거를, 결정은 내가!' + (r.easy ? ' · 쉬운 모드' : ''), 540, 192);
+  drawBot(ctx, 540, 320, 1.4);
+  ctx.fillStyle = '#ebe5ff'; rrect(ctx, 90, 520, 900, 220, 36); ctx.fill();
+  ctx.fillStyle = '#5a3cc9'; ctx.font = 'bold 74px ' + FONT; ctx.fillText(r.type[0], 540, 615);
+  ctx.fillStyle = '#1f2a44'; ctx.font = '33px ' + FONT; wrapText(ctx, r.type[1], 540, 672, 820, 44);
+  var rows = [['세금 낭비', r.g.tax, '#d9473f'], ['기회 손실', r.g.chance, '#c07a00'], ['처리 지연', r.g.delay, '#5b6b8f']];
+  ctx.textAlign = 'left';
+  rows.forEach(function(row, i){
+    var y = 800 + i * 70;
+    ctx.fillStyle = '#56617a'; ctx.font = 'bold 32px ' + FONT; ctx.fillText(row[0], 120, y + 26);
+    ctx.fillStyle = '#e1e7f2'; rrect(ctx, 320, y, 560, 32, 16); ctx.fill();
+    if (row[1] > 0) { ctx.fillStyle = row[2]; rrect(ctx, 320, y, Math.max(32, Math.min(560, row[1] / GMAX * 560)), 32, 16); ctx.fill(); }
+    ctx.fillStyle = '#1f2a44'; ctx.font = 'bold 32px ' + FONT; ctx.fillText(String(row[1]), 910, y + 28);
   });
-  ctx.fillStyle = '#1f2a44'; ctx.font = '32px ' + FONT;
-  wrapText(ctx, '잡아낸 살펴봇의 버릇: ' + r.caught, 540, 1070, 900, 44);
-  ctx.fillStyle = '#2848b0'; ctx.font = 'bold 44px ' + FONT; ctx.fillText('AI는 근거를, 결정은 사람이.', 540, 1210);
-  ctx.fillStyle = '#56617a'; ctx.font = '26px ' + FONT;
-  ctx.fillText('게임 속 기업·단서와 살펴봇의 대사는 모두 가상입니다.', 540, 1275);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#1f2a44'; ctx.font = '31px ' + FONT;
+  wrapText(ctx, '정확도 ' + r.acc + '% · 잡은 버릇: ' + r.caught, 540, 1060, 900, 42);
+  ctx.fillStyle = '#2848b0'; ctx.font = 'bold 42px ' + FONT; ctx.fillText('AI는 근거를, 결정은 사람이.', 540, 1205);
+  ctx.fillStyle = '#56617a'; ctx.font = '25px ' + FONT;
+  ctx.fillText('게임 속 기업·단서·소식과 살펴봇의 대사는 모두 가상입니다.', 540, 1268);
   return c;
 }
-// 자동 다운로드가 막힌 환경(웹 뷰어 등)도 있으므로, 이미지를 화면에 보여 주고 직접 저장하게 한다.
 function saveCard(){
   if (!state.lastResult) return;
   var url;
   try { url = renderCardCanvas().toDataURL('image/png'); } catch(e){ toast('이 브라우저에서는 이미지를 만들 수 없어요', 'bad'); return; }
   var box = $('#modalBox'), prev = $('#cardPreview');
   if (prev) prev.remove();
-  var d = document.createElement('div'); d.id = 'cardPreview';
-  d.style.cssText = 'margin-top:14px;text-align:center';
-  d.innerHTML = '<img src="' + url + '" alt="심사 결과 카드" style="width:270px;border-radius:12px;box-shadow:0 4px 16px rgba(31,42,68,.18)">' +
+  var d = document.createElement('div'); d.id = 'cardPreview'; d.style.cssText = 'margin-top:14px;text-align:center';
+  d.innerHTML = '<img src="' + url + '" alt="심사 결과 카드" style="width:260px;border-radius:12px;box-shadow:0 4px 16px rgba(31,42,68,.18)">' +
     '<p style="font-size:15px">이미지를 마우스 오른쪽 버튼(휴대폰은 길게 누르기)으로 저장하세요.' +
-    // 파일 링크 저장은 index.html을 직접 연 경우(file://)에만 동작하므로 그때만 보여 준다
-    (location.protocol === 'file:' ? ' <a href="' + url + '" download="살펴봇_심사결과.png">파일로 저장</a>' : '') + '</p>';
+    (location.protocol === 'file:' ? ' <a href="' + url + '" download="salpyeobot_result.png">파일로 저장</a>' : '') + '</p>';
   box.appendChild(d); box.scrollTop = box.scrollHeight;
 }
 
-function resetGame(){
-  state.si = 0; state.ci = 0; state.score = 0; state.log = []; state.rules = []; state.sprout1 = null; state.started = false;
+/* =========================================================
+   시작·재시작
+   ========================================================= */
+function resetState(){
+  state.si = 0; state.ci = 0; state.score = 0; state.log = []; state.rules = []; state.sprout1 = null;
   state.firstScoredAt = null; state.firstCorrectAt = null; state.card = null; state.busy = true; state.resultShown = false;
-  clearDrag();
+  state.g = {tax:0, chance:0, delay:0}; state.news = []; state.tokensUsed = 0; state.tokensTotal = 0; state.opened = {}; state.gaugeExplained = false;
+  clearDrag(); renderGauges(null);
   $('#score').textContent = '0점'; $('#banner').textContent = ''; $('#progress').textContent = '';
+}
+function newSeed(){ return 1000 + Math.floor(Math.random() * 9000); }
+function begin(seed){
+  resetState();
+  state.seed = seed; state.decks = deal(seed);
+  state.started = true; state.t0 = performance.now();
+  $('#title').style.display = 'none'; updateInert();
+  goStage(state.skipTutorial ? 1 : 0);
+}
+function restart(skipTutorial){ state.skipTutorial = !!skipTutorial; begin(newSeed()); }
+function resetToTitle(){
+  resetState(); state.started = false;
   $('#title').style.display = 'flex'; updateInert();
-  mood('normal'); say('안녕하세요, 심사관님! 저는 근거를 찾아 드리는 살펴봇이에요.');
+  $('#bot').classList.remove('away'); mood('normal'); say('안녕하세요, 심사관님! 저는 근거를 찾아 드리는 살펴봇이에요.');
 }
 
-/* ---------- 도움말 ---------- */
 function showHelp(){
   if ($('#modal').classList.contains('on')) return;
-  if (state.started && state.busy) return; // 판정 직후 넘어가는 중에는 열지 않음
-  var pausing = state.started && state.card && !state.busy;
-  if (pausing) state.helpPausedAt = performance.now(); // 도움말을 본 시간은 판정 시간에서 뺀다
+  if (state.started && state.busy) return;
+  if (state.started && state.card && !state.busy) state.helpPausedAt = performance.now();
   state.busy = true;
-  openModal('<h2>도움말</h2><p><b>조작</b>: 카드를 왼쪽·오른쪽(3단계는 위쪽)으로 밀거나, 아래 큰 버튼 또는 방향키를 쓰세요. 점선 칸은 눌러서(또는 스페이스바) 숨은 정보를 확인해요. 숨은 정보를 확인하고 맞히면 보너스 점수가 있어요.</p>' +
-    '<p><b>살펴봇</b>은 조달청의 실제 시스템이 아닌 <b>가상 캐릭터</b>예요. 살펴봇의 말과 실수는 교육을 위해 <b>미리 짜 둔 시나리오</b>이고, 게임 중에 생성형 AI가 판단하지 않아요. 조달청이 ‘AI 기술평가’ 실증(2026.8)에서 밝힌 원칙, 곧 AI 분석자료는 ‘평가 참고용 보조자료’로 표시하고 최종 판단은 평가위원이 한다는 원칙을 빌려 왔어요.</p>' +
-    '<p>이 게임은 실제 조달 규칙을 바탕으로 <b>단순화</b>했어요. 기업 이름과 의심 단서는 모두 가상이고, ‘확인 필요’는 게임 속 행동이에요. 실제 심사는 여러 평가와 조사를 거쳐 이뤄져요.</p>' +
+  openModal('<h2>도움말</h2><p><b>조작</b>: 카드를 왼쪽·오른쪽(3단계부터는 위쪽도)으로 밀거나 아래 큰 버튼, 방향키를 쓰세요. 점선 칸은 눌러서(키보드 1·2 또는 스페이스바) 숨은 정보를 확인해요.</p>' +
+    (state.easy ? '<p><b>쉬운 모드</b>: 숨은 칸을 마음껏 열 수 있고, 실전 단계 없이 3단계까지 해요.</p>'
+                : '<p><b>조사권</b>: 단계마다 3장(실전은 2장). 숨은 칸 하나를 열 때 1장씩 써요. 남은 조사권은 단계 끝에 장당 15점.</p>') +
+    '<p><b>우리 동네 계기판</b>: 수상한 곳을 통과시키면 세금 낭비, 멀쩡한 새싹·여성 기업을 막으면 기회 손실, 단서 없는데 확인을 누르면 처리 지연이 올라가요.</p>' +
+    '<p><b>살펴봇</b>은 조달청의 실제 시스템이 아닌 <b>가상 캐릭터</b>예요. 말과 실수는 미리 짜 둔 시나리오이고, 게임 중에 AI가 판단하지 않아요. 조달청이 ‘AI 기술평가’ 실증(2026.8)에서 밝힌 원칙, 곧 AI 분석자료는 ‘평가 참고용 보조자료’로 표시하고 최종 판단은 평가위원이 한다는 원칙을 빌려 왔어요.</p>' +
+    '<p>실제 조달 규칙을 바탕으로 <b>단순화</b>한 게임이에요. 기업·단서·동네 소식은 모두 가상이고, ‘확인 필요’는 게임 속 행동이에요.</p>' +
     '<button class="primary" type="button">닫기</button>', function(){
       if (!state.started) { state.busy = true; return; }
       state.busy = false;
@@ -941,19 +1095,12 @@ function showHelp(){
 }
 onClick($('#helpBtn'), showHelp);
 onClick($('#titleHelp'), showHelp);
+onClick($('#startSound'), function(){ setSound(true); state.skipTutorial = false; state.easy = false; begin(seedFromHash() || newSeed()); });
+onClick($('#startMute'), function(){ setSound(false); state.skipTutorial = false; state.easy = false; begin(seedFromHash() || newSeed()); });
+onClick($('#startEasy'), function(){ setSound(false); state.skipTutorial = false; state.easy = true; begin(seedFromHash() || newSeed()); });
+function seedFromHash(){ var m = /^#s(\d{1,9})$/.exec(location.hash); return m ? +m[1] : 0; }
 
-/* ---------- 시작 ---------- */
-function start(withSound){
-  setSound(withSound);
-  $('#title').style.display = 'none';
-  state.started = true; state.t0 = performance.now(); state.rules = [];
-  updateInert();
-  goStage(0);
-}
-onClick($('#startSound'), function(){ start(true); });
-onClick($('#startMute'), function(){ start(false); });
-
-/* ---------- 자동 진행: #autotest(점검용) · #demo(시연 녹화용, 모달을 읽을 시간 확보) ---------- */
+/* 자동 진행: #autotest(점검용) · #demo(시연 녹화용). 결정적 칸만 열고 정답을 고른다 */
 function autoplay(delay, holdMs){
   function step(){
     if (state.resultShown) return;
@@ -962,8 +1109,10 @@ function autoplay(delay, holdMs){
       state.modalAt = 0; closeModal(); return setTimeout(step, delay);
     }
     if (!state.busy && state.card) {
-      if (state.card.hidden && !state.revealed) { reveal(); return setTimeout(step, delay); }
-      decide(state.card.ans);
+      var c = state.card, need = -1;
+      (c.slots || []).forEach(function(s, i){ if (need < 0 && (s.decisive || c.requireReveal) && !state.opened[i]) need = i; });
+      if (need >= 0 && (freeTokens() || state.tokens > 0)) { reveal(need); return setTimeout(step, delay); }
+      decide(c.ans);
     }
     setTimeout(step, delay);
   }
@@ -971,10 +1120,17 @@ function autoplay(delay, holdMs){
 }
 
 mood('normal'); say('안녕하세요, 심사관님! 저는 근거를 찾아 드리는 살펴봇이에요.');
+renderGauges(null);
 try { if (/\.zip[\\\/]/i.test(decodeURIComponent(location.href))) $('#zipWarn').style.display = 'block'; } catch(e){}
 updateInert();
-if (location.hash === '#autotest') { start(false); autoplay(40, 0); }
-else if (location.hash === '#demo') { start(false); autoplay(1100, 2500); }
+// 점검용 주소: #autotest · #demo · #sim (+심사 번호, +easy). 예) #autotest1234, #sim77easy
+var mT = /^#(autotest|demo|sim)(\d*)(easy)?$/.exec(location.hash);
+if (mT) {
+  state.easy = !!mT[3]; state.auto = true; setSound(false);
+  if (mT[1] === 'sim') window.__game = {state:state, decide:decide, reveal:reveal, closeModal:closeModal}; // 전략 시뮬레이션 전용
+  begin(mT[2] ? +mT[2] : 20261018);
+  if (mT[1] === 'autotest') autoplay(40, 0); else if (mT[1] === 'demo') autoplay(1100, 2500);
+}
 })();
 </script>
 </body>

@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>혁신조달 매칭 본부 (프로토타입 v0.2)</title>
+<style>
+:root{
+  --bg:#eef5f1; --panel:#ffffff; --ink:#1d2a3a; --muted:#56637a; --line:#d6e2dc;
+  --teal:#0f8a6f; --teal-d:#0a6853; --teal-soft:#d8f1e9;
+  --blue:#3d6df2; --blue-d:#2848b0; --blue-soft:#e3ebff;
+  --red:#c2362f; --red-soft:#fde3e1;
+  --amber:#8a5a00; --amber-soft:#fff0c4;
+  --violet:#5a3cc9; --violet-soft:#ebe5ff;
+  --glow:#ffe066;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#c6d9d0;
+  font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:var(--ink);word-break:keep-all;overflow-wrap:anywhere;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button{font-family:inherit;color:inherit}
+#wrap{position:fixed;inset:0;overflow:hidden;touch-action:none;overscroll-behavior:none}
+#stage{position:absolute;left:0;top:0;width:1280px;height:720px;background:var(--bg);border-radius:18px;overflow:hidden;
+  transform-origin:0 0;box-shadow:0 10px 40px rgba(29,42,58,.18)}
+.ico{display:inline-block;vertical-align:middle}
+
+/* 상단 */
+#top{position:absolute;left:0;right:0;top:0;height:64px;background:#fff;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;padding:0 24px;gap:16px}
+#gameName{font-size:21px;font-weight:800;min-width:250px;color:var(--teal-d)}
+#townBar{margin:0 auto;display:flex;gap:8px;align-items:center}
+.town{width:40px;height:40px;border-radius:50%;background:#e6ece9;display:flex;align-items:center;justify-content:center;
+  border:2px solid transparent;transition:all .3s}
+.town svg{width:24px;height:24px;stroke:#9aa8a2}
+.town.now{border-color:var(--teal);background:#fff}
+.town.now svg{stroke:var(--teal)}
+.town.done{background:var(--teal)}
+.town.done svg{stroke:#fff}
+.town.retry{background:var(--amber-soft)}
+.town.retry svg{stroke:var(--amber)}
+#meta{display:flex;align-items:center;gap:12px;min-width:330px;justify-content:flex-end;font-size:17px}
+#score{font-weight:800}
+.iconbtn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font-size:15px;cursor:pointer}
+
+/* 왼쪽: 수요기관 신청서 */
+#request{position:absolute;left:24px;top:84px;width:380px;height:612px;background:var(--panel);border-radius:18px;
+  border:2px solid var(--line);padding:18px 20px;display:flex;flex-direction:column;gap:10px;transition:box-shadow .2s, border-color .2s}
+#request.dropok{border-color:var(--teal);box-shadow:0 0 0 6px rgba(15,138,111,.18)}
+.reqHead{display:flex;align-items:center;justify-content:space-between}
+.reqTag{font-size:14px;font-weight:800;color:var(--teal-d);background:var(--teal-soft);border-radius:8px;padding:3px 9px}
+.reqStep{font-size:15px;color:var(--muted)}
+.agency{font-size:24px;font-weight:800}
+.agency:focus{outline:none}
+.scene{align-self:center;flex:none;width:112px;height:112px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:2px 0}
+#request > *{flex:none}
+.scene svg{width:64px;height:64px;stroke:#fff}
+.reqText{font-size:20px;line-height:1.5;font-weight:700;text-wrap:balance;min-height:60px}
+.condTitle{font-size:16px;color:var(--muted);font-weight:700;margin-top:2px}
+.conds{display:flex;flex-direction:column;gap:8px}
+.cond{display:flex;align-items:center;gap:10px;border:2px solid var(--line);background:#f7faf9;border-radius:14px;padding:9px 12px;
+  font-size:18px;font-weight:700;cursor:pointer;text-align:left}
+.cond svg{width:26px;height:26px;stroke:var(--teal-d);flex:none}
+.cond .chk{margin-left:auto;font-size:16px;color:var(--blue-d);font-weight:800;white-space:nowrap}
+.cond{box-shadow:0 2px 0 rgba(0,0,0,.06)}
+.cond.on{border-color:#e0b800;background:#fffbe0}
+.cond.seen .chk{color:var(--teal-d)}
+
+/* 가운데: 혁신제품 후보 */
+#products{position:absolute;left:420px;top:84px;width:590px;height:478px;display:flex;gap:12px}
+.prod{position:relative;flex:1;background:#fff;border:3px solid var(--line);border-radius:18px;padding:14px 12px;display:flex;flex-direction:column;
+  gap:8px;cursor:grab;touch-action:none;transition:border-color .15s, box-shadow .15s, transform .15s, opacity .2s;text-align:left}
+.prod:hover{transform:translateY(-2px)}
+.prod.sel{border-color:var(--blue);box-shadow:0 0 0 5px rgba(61,109,242,.18)}
+.prod.out{opacity:.62;cursor:not-allowed;filter:grayscale(.4)}
+.prod.dragging{opacity:.4}
+.pic{align-self:center;width:84px;height:84px;border-radius:22px;display:flex;align-items:center;justify-content:center;background:var(--blue-soft)}
+.pic svg{width:52px;height:52px;stroke:var(--blue-d)}
+.pname{font-size:18px;font-weight:800;line-height:1.3}
+.pco{font-size:15px;color:var(--muted);font-weight:700;display:flex;gap:6px;align-items:center}
+.vtag{font-size:13px;border:1px solid var(--line);border-radius:6px;padding:0 5px;color:var(--muted)}
+.pdesc{font-size:15px;line-height:1.45;color:#34425a;min-height:44px}
+.specs{display:flex;flex-direction:column;gap:6px;margin-top:auto}
+.spec{display:flex;align-items:center;gap:7px;background:#f4f7fb;border-radius:10px;padding:7px 8px;font-size:15px;font-weight:700;line-height:1.3;
+  border:2px solid transparent;transition:background .2s,border-color .2s}
+.spec svg{width:20px;height:20px;stroke:#56637a;flex:none}
+.spec.glow{background:#fff6c7;border-color:var(--glow)}
+.spec.good{background:var(--teal-soft);border-color:#8fd6c2}
+.spec.bad{background:var(--red-soft);border-color:#eaa29d}
+.spec .xm{margin-left:auto;font-weight:900;color:var(--red)}
+.rec.wrong{background:#f3c6c3;color:#7a1f19}
+.rec{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#e0b800;color:#3d3100;font-size:13px;font-weight:800;
+  border-radius:999px;padding:3px 10px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+
+/* 오른쪽: 살펴봇 */
+#botPanel{position:absolute;right:24px;top:84px;width:240px;height:612px;background:var(--panel);border-radius:18px;border:1px solid var(--line);
+  padding:14px;display:flex;flex-direction:column;align-items:center}
+#bubble{position:relative;width:100%;background:#fffbe0;border:2px solid #e6c62f;border-radius:16px;padding:11px 12px;font-size:17px;line-height:1.45;min-height:150px}
+#bubble.pop{animation:pop .35s ease}
+@keyframes pop{0%{transform:scale(.92);opacity:.4}60%{transform:scale(1.03);opacity:1}100%{transform:scale(1)}}
+#bubble:after{content:"";position:absolute;left:50%;bottom:-12px;margin-left:-10px;border:10px solid transparent;border-top-color:#e6c62f;border-bottom:0}
+#bubble .tag{display:inline-block;font-size:13px;font-weight:800;background:#e6c62f;color:#3d3100;border-radius:6px;padding:1px 6px;margin-right:5px;vertical-align:1px}
+#bot{width:160px;height:176px;margin-top:28px}
+#botName{font-weight:800;font-size:17px}
+#botNote{font-size:14px;color:var(--muted);text-align:center;margin-top:3px;line-height:1.4}
+
+/* 하단 */
+#bottom{position:absolute;left:0;right:0;top:614px;height:90px;display:flex;align-items:center;justify-content:center;gap:16px}
+#matchBtn{height:78px;min-width:440px;border:0;border-radius:18px;background:var(--teal-d);color:#fff;font-size:24px;font-weight:800;cursor:pointer;
+  box-shadow:0 4px 0 rgba(0,0,0,.14)}
+#matchBtn:disabled{background:#dfe7e3;color:#34425a;cursor:not-allowed;box-shadow:none}
+#matchBtn small{display:block;font-size:16px;font-weight:700}
+#tip{position:absolute;left:420px;width:590px;top:572px;text-align:center;font-size:16px;font-weight:800;color:var(--teal-d)}
+
+#toast{position:absolute;left:715px;top:300px;transform:translate(-50%,8px);background:var(--ink);color:#fff;padding:9px 18px;border-radius:999px;
+  font-size:17px;font-weight:700;opacity:0;transition:all .2s;pointer-events:none;white-space:nowrap;z-index:20}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* 끌어다 놓기 미리보기 */
+#ghost{position:absolute;z-index:60;pointer-events:none;width:150px;padding:10px;border-radius:14px;background:#fff;border:3px solid var(--blue);
+  box-shadow:0 10px 30px rgba(0,0,0,.25);font-size:15px;font-weight:800;text-align:center;display:none}
+
+/* 모달 */
+.overlay{position:absolute;inset:0;background:rgba(29,42,58,.45);display:none;align-items:center;justify-content:center;z-index:50}
+.overlay.on{display:flex}
+.box{width:720px;max-height:700px;overflow:auto;background:#fff;border-radius:22px;padding:22px 30px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.box h2{margin:0 0 8px;font-size:26px}
+.box p{font-size:17px;line-height:1.55;margin:7px 0}
+.box .src{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.5}
+.primary{margin-top:14px;border:0;background:var(--teal);color:#fff;font-size:19px;font-weight:800;border-radius:14px;padding:13px 26px;cursor:pointer}
+.secondary{margin-top:14px;margin-left:8px;border:1px solid var(--line);background:#fff;font-size:17px;font-weight:700;border-radius:14px;padding:12px 18px;cursor:pointer}
+.resultHead{display:flex;align-items:center;gap:18px}
+.bigScene{width:110px;height:110px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+.bigScene svg{width:64px;height:64px;stroke:#fff}
+.stamp{display:inline-block;font-size:15px;font-weight:900;color:var(--teal-d);border:3px solid var(--teal);border-radius:10px;padding:2px 10px;transform:rotate(-4deg);margin-bottom:6px}
+.stamp.fail{color:var(--red);border-color:var(--red)}
+.checks{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.checkrow{display:flex;gap:10px;align-items:center;font-size:16px;border-radius:10px;padding:7px 10px;background:#f4f7fb}
+.checkrow b{min-width:120px}
+.checkrow.ok{background:var(--teal-soft)}
+.checkrow.no{background:var(--red-soft)}
+.mark{font-weight:900;width:22px;text-align:center}
+.stepper{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:10px 0 2px;font-size:14px;font-weight:800}
+.stepper span{border-radius:999px;padding:4px 10px;background:#eef2f6;color:var(--muted)}
+.stepper span.on{background:var(--teal);color:#fff}
+.stepper i{color:var(--muted);font-style:normal}
+.fact{background:var(--blue-soft);border-radius:12px;padding:9px 12px;font-size:15px;line-height:1.5;margin-top:8px}
+.habit{background:var(--violet-soft);border-radius:12px;padding:9px 12px;font-size:16px;margin-top:8px}
+.mapgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:10px 0}
+.mapcell{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:14px;font-weight:700;color:var(--muted)}
+.mapcell .dot{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.mapcell .dot svg{width:30px;height:30px;stroke:#fff}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
+.stat{background:#f4f7fb;border-radius:12px;padding:8px 12px}
+.stat .n{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat .l{font-size:14px;color:var(--muted)}
+.testbar{height:16px;background:#e5ece9;border-radius:99px;overflow:hidden;margin:14px 0}
+.testbar div{height:100%;width:0;background:var(--teal);border-radius:99px;transition:width 1.1s linear}
+
+/* 시작 화면 */
+#title{position:absolute;inset:0;z-index:40;background:linear-gradient(160deg,#e3f4ec 0%,#f6fbf9 55%,#e7eefe 100%);display:flex;align-items:center;justify-content:center;gap:48px}
+#title .tb{max-width:600px}
+#title h1{font-size:52px;margin:0 0 6px;letter-spacing:-1px;color:var(--teal-d)}
+#title .sub{font-size:24px;font-weight:700;margin:0 0 14px}
+#title .desc{font-size:19px;line-height:1.6;color:#2b3a4e;margin:0 0 8px}
+#title .notice{font-size:15px;color:var(--muted);margin:0 0 16px;line-height:1.5}
+#title .proto{font-size:14px;color:var(--muted);margin-top:14px}
+#titleArt{width:300px;height:300px;position:relative}
+#rotate{position:fixed;inset:0;display:none;align-items:center;justify-content:center;text-align:center;background:#1d2a3a;color:#fff;font-size:20px;line-height:1.6;z-index:100;padding:24px}
+@media (orientation:portrait) and (max-width:820px) and (pointer:coarse){ #rotate{display:flex} }
+@media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
+</style>
+</head>
+<body>
+<div id="wrap">
+<div id="stage">
+  <div id="top">
+    <div id="gameName">혁신조달 매칭 본부</div>
+    <div id="townBar" aria-label="우리 동네 진행 상황"></div>
+    <div id="meta"><span id="score">0점</span>
+      <button class="iconbtn" id="soundBtn" type="button">소리 켜기</button>
+      <button class="iconbtn" id="helpBtn" type="button">도움말</button></div>
+  </div>
+
+  <section id="request" aria-label="수요기관 신청서"></section>
+  <div id="products" role="radiogroup" aria-label="혁신제품 후보"></div>
+  <div id="botPanel">
+    <div id="bubble" aria-live="polite"></div>
+    <svg id="bot" viewBox="0 0 200 220" aria-hidden="true">
+      <rect x="40" y="150" width="34" height="14" rx="7" fill="#3d56c9" transform="rotate(-25 57 157)"/>
+      <rect x="126" y="150" width="34" height="14" rx="7" fill="#3d56c9" transform="rotate(25 143 157)"/>
+      <rect x="55" y="128" width="90" height="72" rx="24" fill="#5b7cfa"/>
+      <rect x="72" y="146" width="56" height="30" rx="10" fill="#dfe6ff"/>
+      <circle cx="86" cy="161" r="5" fill="#5b7cfa"/><circle cx="100" cy="161" r="5" fill="#f2a516"/><circle cx="114" cy="161" r="5" fill="#14915f"/>
+      <rect x="92" y="104" width="16" height="30" rx="7" fill="#3d56c9"/>
+      <circle cx="100" cy="64" r="52" fill="#ffffff" stroke="#3d56c9" stroke-width="12"/>
+      <path d="M62 44 A44 44 0 0 1 92 24" stroke="#cfe0ff" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <g class="m-normal"><circle cx="82" cy="62" r="7" fill="#1f2a44"/><circle cx="118" cy="62" r="7" fill="#1f2a44"/>
+        <path d="M84 84 Q100 94 116 84" stroke="#1f2a44" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+      <g class="m-happy" style="display:none"><path d="M73 65 Q82 54 91 65 M109 65 Q118 54 127 65" stroke="#1f2a44" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M80 80 Q100 102 120 80 Z" fill="#1f2a44"/></g>
+      <g class="m-oops" style="display:none"><circle cx="82" cy="64" r="6" fill="#1f2a44"/><circle cx="118" cy="64" r="6" fill="#1f2a44"/>
+        <path d="M86 90 Q100 81 114 90" stroke="#1f2a44" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M136 36 q6 10 0 14 q-6 -4 0 -14z" fill="#7cc4ff"/></g>
+    </svg>
+    <div id="botName">살펴봇</div>
+    <div id="botNote">가상 AI 조수<br>추천은 미리 짠 시나리오(참고용)</div>
+  </div>
+  <div id="tip"></div>
+  <div id="bottom"><button id="matchBtn" type="button" disabled>① 왼쪽 조건부터 눌러 보세요<small>누르면 제품에서 비교할 칸이 노랗게 빛나요</small></button></div>
+  <div id="toast" aria-live="polite"></div>
+  <div id="ghost"></div>
+
+  <div id="title">
+    <div id="titleArt"></div>
+    <div class="tb">
+      <h1>혁신조달 매칭 본부</h1>
+      <p class="sub">우리 동네의 고민에 꼭 맞는 혁신제품을 찾아 주세요!</p>
+      <p class="desc">소방서, 학교, 복지관이 도움을 요청했어요.<br>매칭 담당관이 되어 조건과 제품 사양을 비교해 알맞은 혁신제품을 연결하면,<br>조달청 <b>혁신제품 시범구매</b>처럼 현장에서 먼저 써 봐요. (3분 안팎)</p>
+      <p class="notice">기관·기업·제품·사연은 모두 가상입니다. 살펴봇은 조달청의 실제 시스템이 아니며,<br>살펴봇의 추천은 미리 짜 둔 시나리오이고 게임 중에 AI가 판단하지 않습니다.</p>
+      <button class="primary" id="startSound" type="button">소리 켜고 시작</button>
+      <button class="secondary" id="startMute" type="button">소리 없이 시작</button>
+      <button class="secondary" id="titleHelp" type="button">도움말</button>
+      <div class="proto">프로토타입 v0.2 · 마우스·터치·키보드 지원(PC 권장) · 판마다 살펴봇이 틀리는 신청서가 달라져요</div>
+    </div>
+  </div>
+
+  <div class="overlay" id="modal" role="dialog" aria-modal="true"><div class="box" id="modalBox"></div></div>
+</div>
+</div>
+<div id="rotate">화면을 가로로 돌려 주세요.<br>이 게임은 가로 화면(PC 권장)에 맞춰져 있어요.</div>
+
+<script>
+(function(){
+'use strict';
+
+/* =========================================================
+   아이콘(코드로 그린 선 그림, viewBox 48)
+   ========================================================= */
+var I = {
+  fire:'M24 6c3 7 10 10 10 20a10 10 0 0 1-20 0c0-5 3-8 5-10 0 4 2 6 4 6-1-6 1-11 1-16z',
+  tree:'M24 6l-10 14h6l-8 11h24l-8-11h6z M24 31v11',
+  snow:'M24 6v36 M8 15l32 18 M8 33l32-18 M19 9l5 5 5-5 M19 39l5-5 5 5',
+  school:'M6 20l18-10 18 10 M10 20v20h28V20 M20 40V30h8v10',
+  air:'M6 18h22a5 5 0 1 0-5-5 M6 26h30a5 5 0 1 1-5 5 M6 34h14',
+  heart:'M24 40s-14-8-14-19a8 8 0 0 1 14-5 8 8 0 0 1 14 5c0 11-14 19-14 19z',
+  water:'M4 32c5-4 9-4 14 0s9 4 14 0 9-4 12 0 M4 40c5-4 9-4 14 0s9 4 14 0 9-4 12 0 M24 6c4 6 7 10 7 13a7 7 0 0 1-14 0c0-3 3-7 7-13z',
+  drone:'M8 12h10 M30 12h10 M13 12v6 M35 12v6 M12 18h24v8H12z M19 26l-3 6 M29 26l3 6',
+  robot:'M14 16h20v16H14z M24 9v7 M19 23h1 M28 23h1 M18 32v7 M30 32v7',
+  camera:'M8 16h8l3-4h10l3 4h8v20H8z M24 20a6 6 0 1 0 .1 0',
+  sun:'M24 16a8 8 0 1 0 .1 0 M24 4v6 M24 38v6 M4 24h6 M38 24h6 M10 10l4 4 M34 34l4 4 M10 38l4-4 M34 14l4-4',
+  moon:'M30 8a16 16 0 1 0 10 26A13 13 0 0 1 30 8z',
+  battery:'M8 16h28v16H8z M36 21h4v6h-4 M12 20h7v8h-7z',
+  plug:'M18 6v10 M30 6v10 M14 16h20v8a10 10 0 0 1-20 0z M24 34v8',
+  thermo:'M20 8a4 4 0 0 1 8 0v20a8 8 0 1 1-8 0z M24 18v14',
+  stairs:'M6 40h10v-8h10v-8h10v-8h8',
+  road:'M16 6l-8 36 M32 6l8 36 M24 8v6 M24 20v6 M24 32v6',
+  quiet:'M8 20h8l10-8v24l-10-8H8z M32 20c2 2 2 6 0 8',
+  bell:'M14 32h20l-3-4V20a7 7 0 0 0-14 0v8z M21 36a3 3 0 0 0 6 0',
+  person:'M24 8a5 5 0 1 0 .1 0 M16 40V26a8 8 0 0 1 16 0v14',
+  books:'M10 10h8v28h-8z M20 10h8v28h-8z M31 12l7-2 6 26-7 2z',
+  cart:'M6 10h6l4 20h20l4-14H14 M18 38a2 2 0 1 0 .1 0 M34 38a2 2 0 1 0 .1 0',
+  watch:'M18 6h12v8H18z M18 34h12v8H18z M16 14h16v20H16z',
+  eyeoff:'M6 24s7-10 18-10 18 10 18 10-7 10-18 10S6 24 6 24z M24 20a4 4 0 1 0 .1 0 M8 40L40 8',
+  clock:'M24 8a16 16 0 1 0 .1 0 M24 14v10l7 5',
+  radar:'M24 20a4 4 0 1 0 .1 0 M24 12a12 12 0 1 0 .1 0 M24 5a19 19 0 1 0 .1 0',
+  car:'M8 30l4-10h24l4 10v8H8z M14 38v3 M34 38v3 M12 30h24',
+  hand:'M16 26V12a3 3 0 0 1 6 0v10 M22 20V9a3 3 0 0 1 6 0v11 M28 20v-7a3 3 0 0 1 6 0v15c0 8-5 12-11 12s-10-4-12-9l-3-7a3 3 0 0 1 5-3l3 5',
+  wrench:'M30 6a10 10 0 0 0-9 14L8 33l7 7 13-13a10 10 0 0 0 14-9l-6 6-6-2-2-6z',
+  ruler:'M6 30L30 6l12 12-24 24z M14 22l4 4 M20 16l4 4 M26 10l4 4',
+  bus:'M10 8h28v28H10z M10 24h28 M15 36v5 M33 36v5 M16 30h2 M30 30h2',
+  check:'M10 24l9 9 19-19',
+  star:'M24 6l5 11 12 1-9 8 3 12-11-7-11 7 3-12-9-8 12-1z'
+};
+function svg(name, extra){
+  return '<svg class="ico" aria-hidden="true" focusable="false" viewBox="0 0 48 48" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"' + (extra || '') + '><path d="' + (I[name] || I.star) + '"/></svg>';
+}
+
+/* =========================================================
+   라운드 데이터(모두 가상 사례)
+   - 조건(conds)과 제품 사양(specs)은 같은 key끼리 비교한다.
+   - 사양 문구는 결함을 스스로 말하지 않고, 조건의 숫자·상황과 비교해야 맞는지 알 수 있게 쓴다.
+   - bot.right / bot.wrong: 판마다 무작위로 몇 라운드는 살펴봇이 틀린 추천을 한다.
+   ========================================================= */
+var HABITS = {
+  perf:  ['성능만 보기', '가장 좋아 보이는 성능 하나만 보고 다른 조건을 놓쳐요.'],
+  price: ['값만 보기', '가장 싸고 가벼운 것만 보고 쓸 곳의 조건을 놓쳐요.']
+};
+var ROUNDS = [
+  { id:'school', tutorial:true, agency:'○○초등학교', short:'학교', scene:'school', after:'air', color:'#3d6df2',
+    request:'미세먼지 나쁜 날, 교실 창문을 못 열어요.',
+    conds:[{key:'place', icon:'ruler', text:'교실 하나(60㎡)를 맡아야 해요'}, {key:'noise', icon:'quiet', text:'수업 중에도 조용해야 해요'}],
+    products:[
+      {id:'A', co:'맑은숨', name:'교실 공기정화 시스템', icon:'air', desc:'천장에 달아 교실 공기를 걸러요.',
+       specs:[{key:'place', icon:'ruler', text:'정화 면적 66㎡', ok:true}, {key:'noise', icon:'quiet', text:'소음 38dB(도서관 정도)', ok:true}, {key:'x', icon:'bell', text:'필터 교체 알림'}]},
+      {id:'B', co:'쌩쌩', name:'대형 환풍기', icon:'air', desc:'바람이 세서 공기를 빨리 바꿔요.',
+       specs:[{key:'place', icon:'ruler', text:'환기 면적 300㎡', ok:true}, {key:'noise', icon:'quiet', text:'소음 70dB(큰길 정도)', ok:false, why:'소음이 70dB이라 선생님 목소리가 묻혔어요.'}, {key:'x', icon:'plug', text:'콘센트 연결'}]},
+      {id:'C', co:'콩알', name:'휴대용 청정기', icon:'air', desc:'가방에 쏙, 어디든 들고 다녀요.',
+       specs:[{key:'place', icon:'ruler', text:'정화 면적 5㎡', ok:false, why:'정화 면적이 5㎡라 교실(60㎡) 전체를 맡지 못했어요.'}, {key:'noise', icon:'quiet', text:'소음 30dB', ok:true}, {key:'x', icon:'battery', text:'충전식'}]}
+    ],
+    ans:'A', bot:{right:{say:'조건을 하나씩 눌러 보세요. 빛나는 칸끼리 숫자를 비교하면 답이 보여요!'}},
+    good:'○○초 교실 공기가 맑아졌어요. 미세먼지 나쁜 날에도 수업할 수 있어요!',
+    tip:'① 왼쪽 조건 누르기 → ② 빛나는 칸 비교해 제품 고르기 → ③ [매칭하기]' },
+
+  { id:'fire', agency:'○○소방서', short:'산불', scene:'fire', after:'tree', color:'#d9473f',
+    request:'밤에도 산불을 빨리 찾아야 해요. 산속엔 전깃줄이 없어요.',
+    conds:[{key:'power', icon:'plug', text:'전깃줄 없이 밤새(12시간) 버텨야 해요'}, {key:'time', icon:'moon', text:'어두운 밤에도 봐야 해요'}, {key:'range', icon:'radar', text:'반경 4km 산을 살펴야 해요'}],
+    products:[
+      {id:'A', co:'별빛', name:'산불 감시탑', icon:'radar', desc:'산꼭대기에 세워 두고 사방을 살펴요.',
+       specs:[{key:'power', icon:'sun', text:'태양광 충전·배터리 48시간', ok:true}, {key:'time', icon:'moon', text:'열화상 카메라', ok:true}, {key:'range', icon:'radar', text:'감시 반경 5km', ok:true}]},
+      {id:'B', co:'날쌘', name:'감시 드론', icon:'drone', desc:'하늘을 날며 넓게 살펴요.',
+       specs:[{key:'power', icon:'battery', text:'한 번 비행 30분', ok:false, why:'한 번에 30분만 날 수 있어 밤새(12시간) 지키지 못했어요.'}, {key:'time', icon:'moon', text:'야간 열화상', ok:true}, {key:'range', icon:'radar', text:'비행 반경 10km', ok:true}]},
+      {id:'C', co:'매눈', name:'망원경 세트', icon:'camera', desc:'사람이 직접 멀리 내다봐요.',
+       specs:[{key:'power', icon:'plug', text:'전기 쓰지 않음', ok:true}, {key:'time', icon:'sun', text:'일반 렌즈(빛이 있어야 보임)', ok:false, why:'해가 지자 산불을 볼 수 없었어요.'}, {key:'range', icon:'radar', text:'관측 거리 3km', ok:false, why:'3km까지만 보여 반경 4km를 다 살피지 못했어요.'}]}
+    ],
+    ans:'A', bot:{right:{say:'전깃줄 없이 오래 버티고 밤에도 보는 <b>별빛 감시탑</b>을 추천해요.'},
+                 wrong:{pick:'B', habit:'perf', say:'감시 범위가 반경 10km로 가장 넓은 <b>날쌘 감시 드론</b>을 추천해요!'}},
+    good:'○○산 산불을 밤에도 일찍 찾아 작은 불일 때 껐어요!' },
+
+  { id:'snow', agency:'○○구청 도로과', short:'눈길', scene:'snow', after:'car', color:'#4f7fbf',
+    request:'눈 오는 날 언덕길이 얼어서 차가 미끄러져요.',
+    conds:[{key:'temp', icon:'thermo', text:'영하 15도에도 녹여야 해요'}, {key:'place', icon:'road', text:'차가 다니는 언덕길이에요'}, {key:'auto', icon:'clock', text:'새벽에 사람 없이도 돼야 해요'}],
+    products:[
+      {id:'A', co:'따끈길', name:'도로 열선 시스템', icon:'road', desc:'길 아래 열선이 눈을 녹여요.',
+       specs:[{key:'temp', icon:'thermo', text:'작동 온도 영하 20도까지', ok:true}, {key:'place', icon:'car', text:'차도 아래 매설형', ok:true}, {key:'auto', icon:'clock', text:'눈 감지 센서로 작동', ok:true}]},
+      {id:'B', co:'뽀득', name:'제설 로봇', icon:'robot', desc:'스스로 다니며 눈을 밀어요.',
+       specs:[{key:'temp', icon:'thermo', text:'작동 온도 영하 15도까지', ok:true}, {key:'place', icon:'person', text:'폭 80cm·보행로용', ok:false, why:'보행로용이라 차가 다니는 언덕길에서는 쓸 수 없었어요.'}, {key:'auto', icon:'clock', text:'정해진 길 자동 주행', ok:true}]},
+      {id:'C', co:'소복', name:'친환경 제설제', icon:'snow', desc:'환경에 덜 해로운 녹이는 가루예요.',
+       specs:[{key:'temp', icon:'thermo', text:'효과 온도 영하 10도까지', ok:false, why:'영하 15도에서는 잘 녹지 않았어요.'}, {key:'place', icon:'car', text:'차도·보도 모두', ok:true}, {key:'auto', icon:'hand', text:'사람이 뿌리는 가루', ok:false, why:'새벽에 사람이 나가 뿌려야 했어요.'}]}
+    ],
+    ans:'A', bot:{right:{say:'세 조건을 모두 맞추는 건 <b>따끈길 도로 열선</b>이에요. 숫자를 확인해 보세요!'},
+                 wrong:{pick:'C', habit:'price', say:'값이 가장 싸고 차도에도 쓰는 <b>소복 친환경 제설제</b>를 추천해요!'}},
+    good:'눈 온 새벽에도 언덕길이 녹아 있어요. 출근길 차들이 안전하게 다녀요!' },
+
+  { id:'care', agency:'○○노인복지관', short:'돌봄', scene:'heart', after:'heart', color:'#c0548a',
+    request:'혼자 사는 어르신이 쓰러지면 바로 알아야 해요. 집 안 사생활은 지켜 드려야 해요.',
+    conds:[{key:'privacy', icon:'eyeoff', text:'집 안 모습을 찍으면 안 돼요'}, {key:'wear', icon:'person', text:'몸에 차지 않아도 알아야 해요'}, {key:'time', icon:'clock', text:'하루 24시간 알아야 해요'}],
+    products:[
+      {id:'A', co:'다솜', name:'비접촉 안부 센서', icon:'radar', desc:'방 안 움직임을 감지해 이상하면 알려요.',
+       specs:[{key:'privacy', icon:'eyeoff', text:'움직임만 감지(영상 없음)', ok:true}, {key:'wear', icon:'person', text:'천장 부착형', ok:true}, {key:'time', icon:'plug', text:'콘센트 상시 전원', ok:true}]},
+      {id:'B', co:'또렷', name:'홈 CCTV', icon:'camera', desc:'고화질 영상으로 집 안을 봐요.',
+       specs:[{key:'privacy', icon:'camera', text:'고화질 영상 녹화', ok:false, why:'집 안을 영상으로 찍어서 어르신이 불편해하셨어요.'}, {key:'wear', icon:'person', text:'벽 부착형', ok:true}, {key:'time', icon:'plug', text:'콘센트 상시 전원', ok:true}]},
+      {id:'C', co:'방울', name:'손목 밴드', icon:'watch', desc:'손목에 차면 넘어짐을 알려요.',
+       specs:[{key:'privacy', icon:'eyeoff', text:'영상 없음', ok:true}, {key:'wear', icon:'watch', text:'손목 착용형', ok:false, why:'어르신이 밴드를 자주 빼 두셔서 알 수 없었어요.'}, {key:'time', icon:'battery', text:'배터리 3일·충전 중엔 꺼짐', ok:false, why:'충전하는 동안에는 알 수 없었어요.'}]}
+    ],
+    ans:'A', bot:{right:{say:'영상 없이 늘 켜져 있는 <b>다솜 비접촉 안부 센서</b>를 추천해요.'},
+                 wrong:{pick:'B', habit:'perf', say:'영상으로 보면 가장 정확해요. <b>또렷 홈 CCTV</b>를 추천해요!'}},
+    good:'어르신 사생활은 지키면서, 쓰러지셨을 때 바로 복지관에 알림이 갔어요!' },
+
+  { id:'pool', agency:'○○구민 수영장', short:'수영장', scene:'water', after:'water', color:'#1f8fc0',
+    request:'아이가 물에 빠지면 안전요원이 바로 알아야 해요.',
+    conds:[{key:'place', icon:'water', text:'물속까지 봐야 해요'}, {key:'alert', icon:'bell', text:'안전요원에게 바로 알려야 해요'}, {key:'wear', icon:'person', text:'구명조끼를 안 입은 아이까지 지켜야 해요'}],
+    products:[
+      {id:'A', co:'물빛', name:'수중 감지 시스템', icon:'camera', desc:'물속 움직임을 분석해 위험하면 알려요.',
+       specs:[{key:'place', icon:'water', text:'수중 카메라 분석', ok:true}, {key:'alert', icon:'watch', text:'안전요원 손목시계로 알림', ok:true}, {key:'wear', icon:'person', text:'아이가 찰 장비 없음', ok:true}]},
+      {id:'B', co:'높이', name:'천장 CCTV', icon:'camera', desc:'천장에서 수영장 전체를 찍어요.',
+       specs:[{key:'place', icon:'water', text:'천장에서 수면 촬영', ok:false, why:'물 표면 반사 때문에 물속이 잘 보이지 않았어요.'}, {key:'alert', icon:'bell', text:'관제실 모니터 표시', ok:false, why:'관제실 화면에만 떠서 안전요원이 바로 알 수 없었어요.'}, {key:'wear', icon:'person', text:'아이가 찰 장비 없음', ok:true}]},
+      {id:'C', co:'둥실', name:'센서 구명조끼', icon:'person', desc:'조끼가 물속에 오래 있으면 알려요.',
+       specs:[{key:'place', icon:'water', text:'물속 압력 감지', ok:true}, {key:'alert', icon:'bell', text:'안전요원 알림', ok:true}, {key:'wear', icon:'person', text:'조끼에 센서 내장', ok:false, why:'조끼를 입지 않은 아이는 알 수 없었어요. 구명조끼는 꼭 입고, 이 제품은 함께 쓰면 좋아요.'}]}
+    ],
+    ans:'A', bot:{right:{say:'물속까지 보고 안전요원에게 바로 알리는 <b>물빛 수중 감지</b>를 추천해요.'},
+                 wrong:{pick:'C', habit:'perf', say:'물속 압력까지 재는 <b>둥실 센서 구명조끼</b>가 가장 정확해요!'}},
+    good:'안전요원이 빨리 알아차리고 아이를 도왔어요! 감지 장치는 안전요원을 돕는 도구예요. 물놀이는 보호자와 함께!' },
+
+  { id:'clean', agency:'○○보건소', short:'소독', scene:'robot', after:'check', color:'#2e9b6a',
+    request:'사람이 없는 밤에 좁은 복도를 스스로 닦아 소독해야 해요.',
+    conds:[{key:'place', icon:'ruler', text:'폭 1m 복도를 다녀야 해요'}, {key:'safe', icon:'person', text:'사람이 오면 바로 멈춰야 해요'}, {key:'auto', icon:'clock', text:'밤새(8시간) 스스로 다녀야 해요'}],
+    products:[
+      {id:'A', co:'새싹로봇연구소', name:'방역 로봇', icon:'robot', desc:'바닥과 손잡이를 닦아 소독하며 복도를 돌아요.',
+       specs:[{key:'place', icon:'ruler', text:'몸 폭 60cm', ok:true}, {key:'safe', icon:'person', text:'사람 감지 시 즉시 정지', ok:true}, {key:'auto', icon:'battery', text:'자율주행·스스로 충전', ok:true}]},
+      {id:'B', co:'쏴아', name:'소독 차량', icon:'car', desc:'넓은 마당과 길을 한 번에 소독해요.',
+       specs:[{key:'place', icon:'ruler', text:'차 폭 1.8m', ok:false, why:'차 폭이 1.8m라 복도(1m)에 들어가지 못했어요.'}, {key:'safe', icon:'person', text:'운전자가 보며 운행', ok:false, why:'운전자가 있어야 하고 스스로 멈추지 않았어요.'}, {key:'auto', icon:'hand', text:'운전자 필요', ok:false, why:'밤새 사람이 운전해야 했어요.'}]},
+      {id:'C', co:'휘리릭', name:'소독 드론', icon:'drone', desc:'날아다니며 높은 곳까지 소독해요.',
+       specs:[{key:'place', icon:'ruler', text:'날개 포함 폭 1.2m', ok:false, why:'날개까지 폭이 1.2m라 좁은 복도(1m)를 날 수 없었어요.'}, {key:'safe', icon:'person', text:'장애물 피해 비행', ok:false, why:'사람을 피해 날기만 하고 멈추지는 않았어요.'}, {key:'auto', icon:'battery', text:'한 번 비행 20분', ok:false, why:'20분만 날 수 있어 밤새 다닐 수 없었어요.'}]}
+    ],
+    ans:'A', bot:{right:{say:'좁은 복도에 맞고 사람을 보면 멈추는 <b>새싹로봇연구소 방역 로봇</b>이에요.'},
+                 wrong:{pick:'C', habit:'perf', say:'높은 곳까지 날아서 소독하는 <b>휘리릭 소독 드론</b>이 가장 빨라요!'}},
+    good:'밤사이 복도를 닦아 소독하고, 아침엔 환기된 복도로 출근해요!' },
+
+  { id:'library', agency:'○○시립도서관', short:'도서관', scene:'books', after:'books', color:'#8a5a00',
+    request:'무거운 책 상자를 계단으로 나르다 직원이 다쳐요. 다음 주부터 바로 써야 해요.',
+    conds:[{key:'place', icon:'stairs', text:'계단 20칸을 오르내려야 해요'}, {key:'size', icon:'ruler', text:'서가 사이 폭 60cm를 지나야 해요'}, {key:'install', icon:'wrench', text:'공사 없이 다음 주부터 써야 해요'}],
+    products:[
+      {id:'A', co:'영차', name:'계단 운반 로봇', icon:'robot', desc:'계단을 한 칸씩 오르내리며 짐을 날라요.',
+       specs:[{key:'place', icon:'stairs', text:'계단 주행(경사 35도까지)', ok:true}, {key:'size', icon:'ruler', text:'폭 50cm', ok:true}, {key:'install', icon:'wrench', text:'받은 날부터 사용', ok:true}]},
+      {id:'B', co:'가뿐', name:'바퀴 운반 카트', icon:'cart', desc:'가볍고 값이 가장 싸요.',
+       specs:[{key:'place', icon:'cart', text:'바퀴 4개·평지용', ok:false, why:'계단에서는 들어서 옮겨야 해서 또 허리를 다쳤어요.'}, {key:'size', icon:'ruler', text:'폭 45cm', ok:true}, {key:'install', icon:'wrench', text:'받은 날부터 사용', ok:true}]},
+      {id:'C', co:'번쩍', name:'화물 승강기', icon:'bus', desc:'층과 층 사이로 무거운 짐을 옮겨요.',
+       specs:[{key:'place', icon:'stairs', text:'층 사이 이동', ok:true}, {key:'size', icon:'ruler', text:'폭 90cm', ok:false, why:'폭이 90cm라 서가 사이(60cm)로 들어가지 못했어요.'}, {key:'install', icon:'wrench', text:'설치 공사 3개월', ok:false, why:'설치 공사로 석 달을 기다려야 했어요.'}]}
+    ],
+    ans:'A', bot:{right:{say:'계단과 좁은 서가를 모두 다니는 <b>영차 계단 운반 로봇</b>을 추천해요.'},
+                 wrong:{pick:'B', habit:'price', say:'가볍고 값이 가장 싼 <b>가뿐 바퀴 운반 카트</b>를 추천해요!'}},
+    good:'책 상자를 로봇이 계단으로 날라요. 직원들 허리가 편해졌어요!' }
+];
+var WRONG_PER_GAME = 3;
+
+var FACTS = [
+  '조달청은 <b>혁신제품 시범구매</b>로 혁신제품을 조달청 예산으로 사서 수요기관에 제공하고, 기관은 시범사용한 뒤 결과를 평가·피드백해요.',
+  '시범구매의 주요 단계는 <b>수요조사 → 기관·기업 매칭·계약 → 테스트 → 성공판정</b>이에요.',
+  '시범사용 결과 <b>성공판정</b>을 받은 제품은 우수조달물품 심사 때 특례를 받을 수 있어요.',
+  '<b>혁신제품</b>으로 지정되면 지정 후 3년 동안 공공기관이 수의계약으로 살 수 있어요.',
+  '2026년 1차 시범구매 계획은 <b>133개 제품, 약 323억 원</b> 규모예요.',
+  '살펴봇은 조달청 ‘AI 기술평가’ 실증의 원칙처럼 <b>추천은 참고용, 결정은 사람</b>이 해요(게임 속 설정).'
+];
+var ROLE_NOTE = '실제로는 수요기관이 혁신장터에서 필요한 혁신제품을 골라 시범사용을 신청하고, 조달청이 기관과 기업을 이어 계약해요. 게임은 이 과정을 조건 맞추기로 줄였어요.';
+var SOURCES = '출처: 조달청 누리집 「혁신제품 지정」(pps.go.kr/kor/content.do?key=00648, 2026.10.19 확인) · 조달청 보도자료 2026.2.4(1차 시범구매 계획) · 2026.8.26(AI 기술평가 실증)';
+
+/* =========================================================
+   상태·공통
+   ========================================================= */
+var state = { order:[], ri:0, round:null, sel:null, out:{}, checked:{}, score:0, log:[], tries:0, busy:true, started:false, played:0,
+  wrongSet:{}, bot:null, modalCb:null, modalAt:0, modalKind:'', drag:null, dragMoved:false, scale:1, t0:0, resultShown:false, firstMiss:null };
+var $ = function(s){ return document.querySelector(s); };
+var stageEl = $('#stage');
+function fit(){
+  var vv = window.visualViewport;
+  var W = vv ? vv.width : document.documentElement.clientWidth, H = vv ? vv.height : document.documentElement.clientHeight;
+  var s = Math.min(W / 1280, H / 720); state.scale = s;
+  stageEl.style.transform = 'translate(' + Math.max(0, (W - 1280 * s) / 2) + 'px,' + Math.max(0, (H - 720 * s) / 2) + 'px) scale(' + s + ')';
+}
+window.addEventListener('resize', fit); window.addEventListener('orientationchange', fit);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', fit);
+fit();
+
+var ac = null, soundOn = false;
+function initAudio(){ try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch(e){ ac = null; } }
+function tone(f, dur, type, vol, when){
+  if (!soundOn || !ac) return;
+  var t = ac.currentTime + (when || 0), o = ac.createOscillator(), g = ac.createGain();
+  o.type = type || 'sine'; o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.15, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur + 0.03);
+  o.onended = function(){ o.disconnect(); g.disconnect(); };
+}
+var SFX = {
+  pick: function(){ tone(700, .07, 'sine', .1); },
+  check: function(){ tone(880, .07, 'sine', .1); tone(1175, .08, 'sine', .08, .05); },
+  ok: function(){ [523,659,784,1046].forEach(function(f,i){ tone(f, .16, 'triangle', .14, i * .09); }); },
+  bad: function(){ tone(196, .3, 'sawtooth', .07); },
+  test: function(){ [392,440,494].forEach(function(f,i){ tone(f, .12, 'sine', .08, i * .3); }); }
+};
+function setSound(on){ soundOn = on; if (on) initAudio(); $('#soundBtn').textContent = on ? '소리 끄기' : '소리 켜기'; }
+$('#soundBtn').addEventListener('click', function(){ setSound(!soundOn); });
+
+function mood(m){ ['normal','happy','oops'].forEach(function(k){ var g = document.querySelector('#bot .m-' + k); if (g) g.style.display = k === m ? '' : 'none'; }); }
+function say(html){ var b = $('#bubble'); b.innerHTML = '<span class="tag">참고용</span>' + html; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+var toastT = null;
+function toast(t){ var e = $('#toast'); e.textContent = t; e.className = 'show'; clearTimeout(toastT); toastT = setTimeout(function(){ e.className = ''; }, 1600); }
+
+function updateInert(){
+  var m = $('#modal').classList.contains('on'), t = $('#title').style.display !== 'none';
+  ['#top','#request','#products','#botPanel','#bottom'].forEach(function(s){ $(s).inert = m || t; });
+  $('#title').inert = m;
+}
+function openModal(html, cb, kind){
+  $('#modalBox').innerHTML = html; $('#modal').classList.add('on');
+  state.modalCb = cb || null; state.modalAt = performance.now(); state.modalKind = kind || '';
+  var h2 = $('#modalBox h2'); if (h2) { h2.id = 'modalTitle'; $('#modal').setAttribute('aria-labelledby', 'modalTitle'); }
+  $('#modalBox').scrollTop = 0; updateInert();
+  var b = $('#modalBox .primary');
+  if (b) { b.addEventListener('click', closeModal); setTimeout(function(){ try { b.focus({preventScroll:true}); } catch(e){ b.focus(); } }, 30); }
+}
+function closeModal(){
+  if (!$('#modal').classList.contains('on')) return;
+  if (performance.now() - state.modalAt < 300) return; // 같은 키 입력으로 연달아 닫히는 것 방지
+  $('#modal').classList.remove('on'); updateInert();
+  var cb = state.modalCb; state.modalCb = null; state.modalKind = '';
+  if (cb) cb();
+}
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' && state.modalKind === 'help') { e.preventDefault(); closeModal(); return; }
+  if (!state.started || $('#modal').classList.contains('on') || state.busy) return;
+  if (e.key === '1' || e.key === '2' || e.key === '3') { var p = state.round.products[+e.key - 1]; if (p) select(p.id); }
+  // Enter로 매칭(버튼 위 Enter는 버튼 기본 동작에 맡겨 두 번 처리되지 않게)
+  if (e.key === 'Enter' && state.sel && !(e.target.closest && e.target.closest('button'))) { e.preventDefault(); match(); }
+});
+
+/* =========================================================
+   화면 그리기
+   ========================================================= */
+function botFor(r){
+  if (state.wrongSet[r.id] && r.bot.wrong) return {pick:r.bot.wrong.pick, ok:false, habit:r.bot.wrong.habit, say:r.bot.wrong.say};
+  return {pick:r.tutorial ? null : r.ans, ok:true, habit:null, say:r.bot.right.say};
+}
+function renderTown(){
+  var h = '';
+  state.order.forEach(function(r, i){
+    var L = state.log.filter(function(x){ return x.id === r.id; })[0];
+    var cls = 'town' + (i === state.ri && !L ? ' now' : '') + (L ? (L.first ? ' done' : ' retry') : '');
+    var lbl = r.short + (L ? (L.first ? ' 해결' : ' 다시 해서 해결') : (i === state.ri ? ' 진행 중' : ' 대기'));
+    h += '<div class="' + cls + '" role="img" aria-label="' + lbl + '" title="' + lbl + '">' + svg(r.scene) + '</div>';
+  });
+  $('#townBar').innerHTML = h;
+}
+function renderRequest(){
+  var r = state.round;
+  var h = '<div class="reqHead"><span class="reqTag">수요기관 신청서</span><span class="reqStep">' + (state.ri + 1) + '/' + state.order.length + '번째 신청</span></div>' +
+    '<div class="agency" tabindex="-1" id="agencyName">' + r.agency + '</div>' +
+    '<div class="scene" style="background:' + r.color + '">' + svg(r.scene) + '</div>' +
+    '<div class="reqText">“' + r.request + '”</div>' +
+    '<div class="condTitle">꼭 맞아야 하는 조건 · 눌러서 제품과 비교</div><div class="conds">';
+  r.conds.forEach(function(c){
+    var seen = state.checked[c.key];
+    h += '<button type="button" class="cond' + (seen ? ' seen' : '') + '" data-k="' + c.key + '" aria-pressed="false">' + svg(c.icon) + '<span>' + c.text + '</span><span class="chk">' + (seen ? '확인함' : '눌러 보기') + '</span></button>';
+  });
+  h += '</div>';
+  $('#request').innerHTML = h;
+  document.querySelectorAll('#request .cond').forEach(function(b){ b.addEventListener('click', function(){ checkCond(b.getAttribute('data-k')); }); });
+}
+function renderProducts(){
+  var r = state.round, h = '', bot = state.bot;
+  r.products.forEach(function(p, i){
+    var out = state.out[p.id], sel = state.sel === p.id;
+    var name = p.co + ' ' + p.name + '(가상 기업)';
+    h += '<button type="button" role="radio" class="prod' + (sel ? ' sel' : '') + (out ? ' out' : '') + '" data-p="' + p.id + '" aria-checked="' + sel + '" aria-label="' + (i + 1) + '번 ' + name + (out ? ', 이미 시험함' : '') + '"' + (out ? ' aria-disabled="true"' : '') + '>' +
+      (bot.pick === p.id ? '<span class="rec' + (out ? ' wrong' : '') + '">' + (out ? '살펴봇 추천(틀렸어요)' : '살펴봇 추천') + '</span>' : '') +
+      '<span class="pic" style="display:flex">' + svg(p.icon) + '</span>' +
+      '<span class="pname" style="display:block">' + p.name + '</span>' +
+      '<span class="pco">' + (i + 1) + '. ' + p.co + ' <span class="vtag">가상 기업</span></span>' +
+      '<span class="pdesc" style="display:block">' + p.desc + '</span><span class="specs">';
+    p.specs.forEach(function(s){
+      var bad = out && s.ok === false;
+      h += '<span class="spec' + (bad ? ' bad' : '') + '" data-k="' + s.key + '">' + svg(s.icon) + '<span>' + s.text + '</span>' + (bad ? '<span class="xm" aria-label="맞지 않음">X</span>' : '') + '</span>';
+    });
+    h += '</span></button>';
+  });
+  $('#products').innerHTML = h;
+  document.querySelectorAll('#products .prod').forEach(function(el){ bindProduct(el); });
+}
+function renderMatchBtn(){
+  var b = $('#matchBtn'), p = selProduct(), anyChecked = Object.keys(state.checked).length > 0;
+  b.disabled = !p;
+  if (p) b.innerHTML = '③ 매칭하기<small>' + p.co + ' ' + p.name + '(가상) · 조건을 다 비교했나요?</small>';
+  else if (!anyChecked) b.innerHTML = '① 왼쪽 조건부터 눌러 보세요<small>누르면 제품에서 비교할 칸이 노랗게 빛나요</small>';
+  else b.innerHTML = '② 맞는 제품을 골라 주세요<small>제품을 누르거나 신청서로 끌어다 놓아요</small>';
+}
+function selProduct(){ var r = state.round; if (!r || !state.sel) return null; return r.products.filter(function(p){ return p.id === state.sel; })[0]; }
+
+/* 조건을 누르면 세 제품에서 그 조건과 관련된 칸이 빛난다(맞는지 판단은 사람이) */
+function checkCond(k){
+  if (state.busy) return;
+  state.checked[k] = true;
+  document.querySelectorAll('#request .cond').forEach(function(b){
+    var on = b.getAttribute('data-k') === k;
+    b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+    if (on) { b.classList.add('seen'); b.querySelector('.chk').textContent = '확인함'; }
+  });
+  document.querySelectorAll('#products .spec').forEach(function(s){ s.classList.toggle('glow', s.getAttribute('data-k') === k); });
+  renderMatchBtn(); SFX.check();
+}
+function select(id){
+  if (state.busy) return;
+  var r = state.round, p = r.products.filter(function(q){ return q.id === id; })[0];
+  if (state.out[id]) {
+    var why = p.specs.filter(function(s){ return s.ok === false; }).map(function(s){ return s.why; })[0] || '';
+    toast('이미 시험해 본 제품이에요 — ' + why); return;
+  }
+  if (r.tutorial && !Object.keys(state.checked).length) { toast('먼저 왼쪽 조건을 하나 눌러 보세요!'); return; }
+  state.sel = id;
+  document.querySelectorAll('#products .prod').forEach(function(el){
+    var on = el.getAttribute('data-p') === id; el.classList.toggle('sel', on); el.setAttribute('aria-checked', on);
+  });
+  renderMatchBtn(); SFX.pick();
+}
+
+/* 끌어다 놓기: 제품 카드를 신청서 위에 놓으면 그 제품을 고른다(확정은 [매칭하기]) */
+function bindProduct(el){
+  el.addEventListener('click', function(){ if (state.dragMoved) { state.dragMoved = false; return; } select(el.getAttribute('data-p')); });
+  el.addEventListener('pointerdown', function(e){
+    if (state.busy || e.button !== 0 || state.drag || state.out[el.getAttribute('data-p')]) return;
+    state.drag = {id:el.getAttribute('data-p'), x:e.clientX, y:e.clientY, pid:e.pointerId, el:el, moving:false};
+    try { el.setPointerCapture(e.pointerId); } catch(err){}
+  });
+  el.addEventListener('pointermove', function(e){
+    var d = state.drag; if (!d || d.pid !== e.pointerId) return;
+    var dx = e.clientX - d.x, dy = e.clientY - d.y;
+    if (!d.moving && Math.abs(dx) + Math.abs(dy) > 12) {
+      d.moving = true; el.classList.add('dragging');
+      var p = state.round.products.filter(function(q){ return q.id === d.id; })[0];
+      var g = $('#ghost'); g.innerHTML = p.co + '<br>' + p.name; g.style.display = 'block';
+    }
+    if (d.moving) {
+      var rect = stageEl.getBoundingClientRect(), g2 = $('#ghost');
+      g2.style.left = ((e.clientX - rect.left) / state.scale - 75) + 'px';
+      g2.style.top = ((e.clientY - rect.top) / state.scale - 30) + 'px';
+      $('#request').classList.toggle('dropok', overRequest(e));
+    }
+  });
+  function end(e, cancel){
+    var d = state.drag; if (!d || d.pid !== e.pointerId) return;
+    state.drag = null; el.classList.remove('dragging'); $('#ghost').style.display = 'none'; $('#request').classList.remove('dropok');
+    if (d.moving) {
+      state.dragMoved = true; setTimeout(function(){ state.dragMoved = false; }, 50);
+      if (!cancel && overRequest(e)) { select(d.id); if (state.sel === d.id) toast('신청서에 놓았어요! [매칭하기]로 확정해요'); }
+    }
+  }
+  el.addEventListener('pointerup', function(e){ end(e, false); });
+  el.addEventListener('pointercancel', function(e){ end(e, true); });
+}
+function overRequest(e){
+  var r = $('#request').getBoundingClientRect();
+  return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+}
+$('#matchBtn').addEventListener('click', function(){ match(); });
+
+/* =========================================================
+   진행
+   ========================================================= */
+function showRound(){
+  var r = state.order[state.ri];
+  state.round = r; state.sel = null; state.out = {}; state.checked = {}; state.tries = 0; state.busy = false; state.firstMiss = null;
+  state.bot = botFor(r);
+  renderTown(); renderRequest(); renderProducts(); renderMatchBtn();
+  $('#tip').textContent = r.tip || '';
+  mood('normal'); say(state.bot.say);
+  var a = $('#agencyName'); if (a) try { a.focus({preventScroll:true}); } catch(e){}
+}
+function match(){
+  var r = state.round, p = selProduct(), bot = state.bot;
+  if (state.busy || !p) return;
+  state.busy = true; state.tries++;
+  var good = p.id === r.ans;
+  var firstTry = state.tries === 1;
+  var followedBadAI = !bot.ok && p.id === bot.pick;
+  var correctedAI = !bot.ok && good && firstTry;
+  var allChecked = r.conds.every(function(c){ return state.checked[c.key]; });
+  SFX.test();
+  openModal('<h2>' + r.agency + '에서 시범사용 중…</h2><p>' + p.co + ' ' + p.name + '(가상)을 현장에서 써 보고 있어요.</p><div class="testbar"><div id="tb"></div></div>' +
+    '<div class="stepper"><span class="on">수요조사</span><i>→</i><span class="on">매칭·계약</span><i>→</i><span class="on">테스트</span><i>→</i><span>성공판정</span></div>', null, 'test');
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ var tb = $('#tb'); if (tb) tb.style.width = '100%'; }); });
+  setTimeout(function(){
+    $('#modal').classList.remove('on'); updateInert();
+    var rows = r.conds.map(function(c){
+      var s = p.specs.filter(function(x){ return x.key === c.key; })[0];
+      var ok = s && s.ok;
+      return '<div class="checkrow ' + (ok ? 'ok' : 'no') + '"><span class="mark">' + (ok ? 'O' : 'X') + '</span><b>' + c.text + '</b><span>' + (s ? s.text : '') + '</span></div>';
+    }).join('');
+    if (good) {
+      var gained = firstTry ? 100 : 40, bonus = '';
+      if (correctedAI) gained += 50;
+      if (firstTry && allChecked) { gained += 20; bonus = ' (조건을 모두 비교한 꼼꼼 보너스 +20 포함)'; }
+      state.score += gained; $('#score').textContent = state.score + '점';
+      state.log.push({id:r.id, first:firstTry, tries:state.tries, correctedAI:correctedAI, aiWrong:!bot.ok, followedBadAI:!!(state.firstMiss && state.firstMiss.followedBadAI), checked:Object.keys(state.checked).length, conds:r.conds.length});
+      SFX.ok(); mood(correctedAI ? 'oops' : 'happy');
+      say(correctedAI ? '앗, 제 버릇 <b>‘' + HABITS[bot.habit][0] + '’</b>이 나왔네요. 조건을 끝까지 본 담당관님 덕분이에요!' : '좋은 매칭이에요!');
+      var fact = FACTS[state.ri % FACTS.length];
+      openModal('<div class="resultHead"><div class="bigScene" style="background:' + r.color + '">' + svg(r.after) + '</div><div>' +
+        '<span class="stamp">성공판정!</span><h2>' + r.agency + ' 문제 해결</h2><p>' + r.good + '</p></div></div>' +
+        '<div class="checks">' + rows + '</div>' +
+        '<div class="stepper"><span class="on">수요조사</span><i>→</i><span class="on">매칭·계약</span><i>→</i><span class="on">테스트</span><i>→</i><span class="on">성공판정</span></div>' +
+        (correctedAI ? '<div class="habit">살펴봇 추천을 바로잡았어요! 살펴봇의 버릇 <b>‘' + HABITS[bot.habit][0] + '’</b>: ' + HABITS[bot.habit][1] + ' (+50)</div>' : '') +
+        '<div class="fact">' + fact + '</div>' +
+        '<p style="font-size:15px;color:#56637a">게임 속 가상 사례예요. <b style="font-size:18px;color:#0a6853">+' + gained + '점</b>' + bonus + '</p>' +
+        '<button class="primary" type="button">' + (state.ri + 1 < state.order.length ? '다음 신청서' : '결과 보기') + '</button>', nextRound, 'success');
+    } else {
+      state.out[p.id] = true;
+      if (state.tries === 1) state.firstMiss = {followedBadAI:followedBadAI};
+      var reasons = r.conds.map(function(c){ var s = p.specs.filter(function(x){ return x.key === c.key; })[0]; return s && !s.ok ? s.why : null; }).filter(Boolean);
+      SFX.bad(); mood('oops');
+      say(followedBadAI ? '제 추천만 믿으면 안 돼요. 조건을 하나씩 다시 비교해 봐 주세요!' : '조건 중 하나가 맞지 않았어요. 다시 골라 볼까요?');
+      openModal('<div class="resultHead"><div class="bigScene" style="background:#9aa8b8">' + svg(r.scene) + '</div><div>' +
+        '<span class="stamp fail">테스트 결과: 맞지 않아요</span><h2>' + p.co + ' ' + p.name + ' <span class="vtag">가상 기업</span></h2><p>' + reasons.join(' ') + '</p></div></div>' +
+        '<div class="checks">' + rows + '</div>' +
+        (followedBadAI ? '<div class="habit">살펴봇의 버릇 <b>‘' + HABITS[bot.habit][0] + '’</b>: ' + HABITS[bot.habit][1] + '</div>' : '') +
+        '<p style="font-size:15px">실제 시범구매도 현장에서 써 보고 결과를 평가해요. 다른 제품으로 다시 매칭해 보세요. <span style="color:#56637a">(게임 속 가상 제품의 가상 결과예요)</span></p>' +
+        '<button class="primary" type="button">다시 매칭하기</button>', function(){
+          state.busy = false; state.sel = null; renderRequest(); renderProducts(); renderMatchBtn();
+          var first = document.querySelector('#products .prod:not(.out)'); if (first) try { first.focus({preventScroll:true}); } catch(e){}
+        }, 'fail');
+    }
+  }, 1250);
+}
+function nextRound(){
+  state.ri++;
+  if (state.ri < state.order.length) showRound(); else showResult();
+}
+
+/* =========================================================
+   결과
+   ========================================================= */
+var BEST_KEY = 'matching-best-v1';
+function loadBest(){ try { return JSON.parse(localStorage.getItem(BEST_KEY) || 'null'); } catch(e){ return null; } }
+function saveBest(v){ try { localStorage.setItem(BEST_KEY, JSON.stringify(v)); } catch(e){} }
+function showResult(){
+  state.resultShown = true; state.played++; renderTown(); mood('happy'); say('우리 동네가 한결 나아졌어요. 수고했어요!');
+  var L = state.log, n = L.length;
+  var first = L.filter(function(x){ return x.first; }).length;
+  var aiWrong = L.filter(function(x){ return x.aiWrong; }).length;
+  var corrected = L.filter(function(x){ return x.correctedAI; }).length;
+  var followed = L.filter(function(x){ return x.followedBadAI; }).length;
+  var checkedAll = L.filter(function(x){ return x.checked >= x.conds; }).length;
+  var best = loadBest(), isBest = !best || state.score > best.score;
+  if (isBest && !state.auto) saveBest({score:state.score});
+  var type;
+  if (followed >= 2) type = ['AI 짝꿍형', '살펴봇 추천을 자주 그대로 따랐어요. 조건을 하나씩 눌러 직접 비교해 봐요. AI는 참고, 결정은 사람!'];
+  else if (first === n) type = ['척척 매칭왕', '모든 신청을 한 번에 해결했어요. 숫자를 꼼꼼히 비교하는 눈이 정확해요!'];
+  else if (aiWrong > 0 && corrected === aiWrong) type = ['살펴봇 검증관', '살펴봇이 틀린 추천을 모두 바로잡았어요. 추천은 참고, 확인은 사람!'];
+  else type = ['새내기 매칭 담당관', '조건 하나만 안 맞아도 현장에선 쓸 수 없어요. 한 판 더 하면 금방 늘어요!'];
+  var map = state.order.map(function(r){
+    var x = L.filter(function(y){ return y.id === r.id; })[0];
+    return '<div class="mapcell"><div class="dot" style="background:' + (x ? (x.first ? r.color : '#c9a24a') : '#c7d0cc') + '">' + svg(x ? r.after : r.scene) + '</div>' + r.short + (x && !x.first ? '(다시)' : '') + '</div>';
+  }).join('');
+  openModal('<h2>매칭 결과 · 우리 동네가 바뀌었어요</h2><div class="mapgrid">' + map + '</div>' +
+    '<div class="habit" style="background:#e3f4ec"><b style="font-size:20px;color:#0a6853">' + type[0] + '</b> · ' + state.score + '점' + (best && !isBest ? ' (최고 ' + best.score + '점)' : (state.played > 1 || best ? ' · 최고 기록!' : '')) + '<br>' + type[1] + '</div>' +
+    '<div class="stats"><div class="stat"><div class="n">' + first + '/' + n + '</div><div class="l">한 번에 해결</div></div>' +
+    '<div class="stat"><div class="n">' + corrected + '/' + aiWrong + '</div><div class="l">살펴봇 추천 바로잡기</div></div>' +
+    '<div class="stat"><div class="n">' + checkedAll + '/' + n + '</div><div class="l">조건을 모두 비교한 신청</div></div></div>' +
+    '<div class="fact"><b>진짜 조달청에서는</b><br>' + FACTS[0] + '<br>' + FACTS[1] + '<br>' + FACTS[2] + '<br><span style="color:#34425a">' + ROLE_NOTE + '</span></div>' +
+    '<div class="src">' + SOURCES + '<br>게임 속 기관·기업·제품·사연은 모두 가상이며, 살펴봇의 추천은 미리 짠 시나리오입니다(실제 AI 성능과 무관). 판마다 살펴봇이 틀리는 신청서가 달라져요.</div>' +
+    '<button class="primary" type="button">새 신청서 순서로 한 판 더</button><button class="secondary" id="homeBtn" type="button">처음 화면</button>', function(){ begin(false, true); }, 'result');
+  $('#homeBtn').addEventListener('click', function(){ state.modalCb = toTitle; state.modalAt = 0; closeModal(); });
+}
+
+/* =========================================================
+   시작
+   ========================================================= */
+function shuffle(a){ for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+// fixed: 점검용(순서·오답 라운드 고정, 정답 위치는 2·3·1로 분산), skipTutorial: 두 번째 판부터 연습 생략
+function begin(fixed, skipTutorial){
+  var tut = ROUNDS.filter(function(r){ return r.tutorial; });
+  var rest = ROUNDS.filter(function(r){ return !r.tutorial; });
+  var list = (skipTutorial ? [] : tut).concat(fixed ? rest : shuffle(rest.slice()));
+  state.order = list.map(function(r, i){
+    var prods = r.products.slice();
+    if (fixed) { var k = i % 3; prods = prods.slice(k).concat(prods.slice(0, k)); } else shuffle(prods);
+    return Object.assign({}, r, {products:prods});
+  });
+  state.wrongSet = {};
+  var cands = rest.filter(function(r){ return r.bot.wrong; }).map(function(r){ return r.id; });
+  (fixed ? ['fire','care','library'] : shuffle(cands).slice(0, WRONG_PER_GAME)).forEach(function(id){ state.wrongSet[id] = true; });
+  state.ri = 0; state.score = 0; state.log = []; state.started = true; state.resultShown = false; state.firstMiss = null;
+  state.t0 = performance.now(); $('#score').textContent = '0점';
+  $('#title').style.display = 'none'; updateInert();
+  showRound();
+}
+function toTitle(){ state.started = false; $('#title').style.display = 'flex'; updateInert(); }
+function showHelp(){
+  if ($('#modal').classList.contains('on')) return;
+  var wasBusy = state.busy; state.busy = true;
+  openModal('<h2>도움말</h2><p><b>하는 법</b>: 왼쪽 신청서의 조건을 누르면, 세 제품에서 그 조건과 비교할 칸이 노랗게 빛나요. 숫자와 상황을 비교해 <b>모든 조건에 맞는 제품</b>을 골라 [매칭하기]를 누르세요. 제품을 신청서로 끌어다 놓아도 골라져요. 키보드 1·2·3으로 고르고 Enter로 매칭할 수 있어요.</p>' +
+    '<p><b>살펴봇</b>은 가상 AI 조수예요. 추천은 미리 짜 둔 시나리오이고, 판마다 몇 번은 일부러 틀려요. 추천은 참고만 하고 조건은 직접 비교하세요.</p>' +
+    '<p><b>진짜 조달청에서는</b> 혁신제품 시범구매로 혁신제품을 조달청 예산으로 사서 수요기관에 제공하고, 기관이 시범사용한 뒤 결과를 평가해 성공판정을 해요. ' + ROLE_NOTE + ' 게임 속 기관·기업·제품·사연은 모두 가상이에요.</p>' +
+    '<button class="primary" type="button">닫기</button>', function(){ state.busy = wasBusy; }, 'help');
+}
+$('#helpBtn').addEventListener('click', showHelp);
+$('#titleHelp').addEventListener('click', showHelp);
+$('#startSound').addEventListener('click', function(){ setSound(true); begin(false, false); });
+$('#startMute').addEventListener('click', function(){ setSound(false); begin(false, false); });
+
+// 시작 화면 그림: 동네 아이콘을 둥글게
+(function(){
+  var h = '', n = ROUNDS.length;
+  ROUNDS.forEach(function(r, i){
+    var a = (i / n) * Math.PI * 2 - Math.PI / 2, x = 150 + Math.cos(a) * 110 - 32, y = 150 + Math.sin(a) * 110 - 32;
+    h += '<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;width:64px;height:64px;border-radius:50%;background:' + r.color + ';display:flex;align-items:center;justify-content:center">' + svg(r.scene, ' style="width:36px;height:36px;stroke:#fff"') + '</div>';
+  });
+  h += '<div style="position:absolute;left:100px;top:100px;width:100px;height:100px;border-radius:50%;background:#0f8a6f;display:flex;align-items:center;justify-content:center">' + svg('star', ' style="width:56px;height:56px;stroke:#fff"') + '</div>';
+  $('#titleArt').innerHTML = h;
+})();
+
+// 점검용: #autotest 는 모든 조건을 확인하고 정답을 골라 끝까지 진행한다(기록은 남기지 않음)
+function autoplay(delay){
+  function step(){
+    if (state.resultShown) return;
+    if ($('#modal').classList.contains('on')) {
+      if (state.modalKind !== 'test') { state.modalAt = 0; closeModal(); }
+      return setTimeout(step, delay);
+    }
+    if (!state.busy && state.round) {
+      var r = state.round, k = r.conds.map(function(c){ return c.key; }).filter(function(x){ return !state.checked[x]; })[0];
+      if (k) { checkCond(k); return setTimeout(step, delay); }
+      if (state.sel !== r.ans) { select(r.ans); return setTimeout(step, delay); }
+      match();
+    }
+    setTimeout(step, delay);
+  }
+  setTimeout(step, delay);
+}
+mood('normal'); say('안녕하세요! 저는 혁신제품을 추천해 드리는 살펴봇이에요.');
+updateInert();
+if (location.hash === '#autotest') { state.auto = true; setSound(false); begin(true, false); autoplay(30); }
+else if (location.hash === '#demo') { state.auto = true; setSound(false); begin(true, false); autoplay(900); }
+})();
+</script>
+</body>
+</html>
